@@ -1,0 +1,41 @@
+# Visual Studio / Rider / VS Code
+.vscode/*
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# .NET Build artifacts
+**/bin/
+**/obj/
+*.DotSettings.user
+*.xproj
+_ReSharper*/
+TestResults/
+*.resharper.user
+
+# Node / NPM / Angular
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+.angular/
+**/.angular/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.local.json
+
+# OS files
+Thumbs.db
+[Dd]esktop.ini
+.DS_Store

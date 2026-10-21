@@ -1,0 +1,51 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">ค่าบริหาร & ค่านายหน้า (Agency Fees)</h1>
+      <p class="page-subtitle">ติดตามรายได้ค่าบริหารรายเดือน ค่านายหน้าปล่อยเช่าครั้งเดียว และสถานะการเรียกเก็บเงินจริง</p>
+    </div>
+    <button class="btn btn-primary">+ สร้างรายการเรียกเก็บ</button>
+  </div>
+
+  <div class="table-card">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>ประเภทค่าบริการ / ห้อง</th>
+          <th>ผู้มีหน้าที่จ่าย</th>
+          <th>งวด / เงื่อนไข</th>
+          <th>วิธีคำนวณ</th>
+          <th>จำนวนเงิน</th>
+          <th>วิธีรับเงิน</th>
+          <th>สถานะ</th>
+          <th>จัดการ</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let f of fees">
+          <td>
+            <div class="cell-main">
+              <span class="title">{{ f.feeType }}</span>
+              <span class="sub">{{ f.unit }}</span>
+            </div>
+          </td>
+          <td>{{ f.payer }}</td>
+          <td>{{ f.period }}</td>
+          <td>{{ f.calcBasis }}</td>
+          <td class="font-mono font-bold text-amber">฿ {{ f.amount | number }}</td>
+          <td>
+            <span class="badge badge-blue">{{ f.method }}</span>
+          </td>
+          <td>
+            <span class="badge" [class.badge-emerald]="f.status === 'รับเงินแล้ว'" [class.badge-amber]="f.status === 'รอนำส่ง/หักยอด'">
+              {{ f.status }}
+            </span>
+          </td>
+          <td>
+            <button class="btn btn-secondary btn-xs">รายละเอียด</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

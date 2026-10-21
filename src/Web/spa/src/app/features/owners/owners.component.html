@@ -1,0 +1,45 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">เจ้าของห้อง (Owners)</h1>
+      <p class="page-subtitle">ข้อมูลติดต่อ ข้อตกลงการคิดค่าบริหาร บัญชีรับเงิน และสถานะสรุปเงินรายบุคคล</p>
+    </div>
+    <button class="btn btn-primary">+ เพิ่มเจ้าของใหม่</button>
+  </div>
+
+  <div class="cards-grid">
+    <div class="owner-card" *ngFor="let o of owners">
+      <div class="owner-header">
+        <div class="owner-avatar">{{ o.initial }}</div>
+        <div class="owner-title-box">
+          <span class="owner-name">{{ o.name }}</span>
+          <span class="owner-phone">{{ o.phone }} · {{ o.email }}</span>
+        </div>
+        <span class="badge badge-emerald">{{ o.unitsCount }} ห้อง</span>
+      </div>
+
+      <div class="owner-body">
+        <div class="detail-row">
+          <span class="detail-label">ข้อตกลงค่าบริหาร:</span>
+          <span class="detail-val text-emerald font-bold">{{ o.feeTerms }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">วิธีเก็บค่าบริหาร:</span>
+          <span class="detail-val">{{ o.collectionMethod }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">บัญชีรับเงินโอน:</span>
+          <span class="detail-val">{{ o.bankAccount }}</span>
+        </div>
+      </div>
+
+      <div class="owner-footer">
+        <div class="settlement-status">
+          <span class="label">ยอดรอนำส่งรอบนี้</span>
+          <span class="value font-mono">฿ {{ o.pendingSettlement | number }}</span>
+        </div>
+        <button class="btn btn-secondary btn-xs">ออก Statement</button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,61 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">โครงการและห้องชุด (Projects & Units)</h1>
+      <p class="page-subtitle">จัดการข้อมูลห้องชุด 184 ห้อง เจ้าของร่วม สัดส่วนการถือครอง และสถานะการปล่อยเช่า</p>
+    </div>
+    <button class="btn btn-primary">+ เพิ่มห้องชุดใหม่</button>
+  </div>
+
+  <div class="filter-bar">
+    <input type="text" class="input-search" placeholder="ค้นหาตามชื่อโครงการ, เลขห้อง, อาคาร..." />
+    <div class="filter-pills">
+      <button class="pill active">ทั้งหมด (184)</button>
+      <button class="pill">มีผู้เช่า (176)</button>
+      <button class="pill">ห้องว่าง (8)</button>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>ห้อง / โครงการ</th>
+          <th>ประเภท</th>
+          <th>พื้นที่</th>
+          <th>เจ้าของห้อง (Owner)</th>
+          <th>สถานะห้อง</th>
+          <th>ค่าเช่าต่อเดือน</th>
+          <th>การจัดการ</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let u of units">
+          <td>
+            <div class="unit-cell">
+              <span class="unit-no">{{ u.unitNumber }}</span>
+              <span class="project-name">{{ u.project }}</span>
+            </div>
+          </td>
+          <td>{{ u.type }}</td>
+          <td>{{ u.area }} ตร.ม.</td>
+          <td>
+            <div class="owner-cell">
+              <span>{{ u.owner }}</span>
+              <span class="ownership-pct">{{ u.ownership }}</span>
+            </div>
+          </td>
+          <td>
+            <span class="badge" [class.badge-emerald]="u.status === 'มีผู้เช่า'" [class.badge-blue]="u.status === 'ว่าง'">
+              {{ u.status }}
+            </span>
+          </td>
+          <td class="font-mono font-bold">฿ {{ u.rent | number }}</td>
+          <td>
+            <button class="btn btn-secondary btn-xs">รายละเอียด</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

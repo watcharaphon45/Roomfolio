@@ -1,0 +1,53 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">ค่าใช้จ่ายห้องชุด (Expenses)</h1>
+      <p class="page-subtitle">บันทึกค่าใช้จ่ายที่นายหน้าสำรองจ่ายแทนเจ้าของ และระบุสิทธิ์ในการหักจากยอด Settlement</p>
+    </div>
+    <button class="btn btn-primary">+ บันทึกค่าใช้จ่าย</button>
+  </div>
+
+  <div class="table-card">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>วันที่ / ห้อง</th>
+          <th>หมวดหมู่</th>
+          <th>รายละเอียด</th>
+          <th>ผู้จ่ายจริง</th>
+          <th>จำนวนเงิน</th>
+          <th>สิทธิ์หักใน Settlement</th>
+          <th>สถานะ</th>
+          <th>จัดการ</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let e of expenses">
+          <td>
+            <div class="cell-main">
+              <span class="title">{{ e.unit }}</span>
+              <span class="sub">{{ e.date }}</span>
+            </div>
+          </td>
+          <td>
+            <span class="badge badge-blue">{{ e.category }}</span>
+          </td>
+          <td>{{ e.description }}</td>
+          <td>{{ e.paidBy }}</td>
+          <td class="font-mono font-bold text-rose">฿ {{ e.amount | number }}</td>
+          <td>
+            <span class="badge" [class.badge-emerald]="e.deductible" [class.badge-rose]="!e.deductible">
+              {{ e.deductible ? 'หักจากเจ้าของได้' : 'ไม่หัก' }}
+            </span>
+          </td>
+          <td>
+            <span class="badge badge-emerald">{{ e.status }}</span>
+          </td>
+          <td>
+            <button class="btn btn-secondary btn-xs">ดูสลิป</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

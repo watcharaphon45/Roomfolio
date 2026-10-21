@@ -1,0 +1,47 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">ผู้เช่า (Tenants)</h1>
+      <p class="page-subtitle">ข้อมูลติดต่อผู้เช่า สัญญาเช่าปัจจุบัน ประวัติการชำระเงิน และเงินประกันห้องชุด</p>
+    </div>
+    <button class="btn btn-primary">+ เพิ่มผู้เช่า</button>
+  </div>
+
+  <div class="table-card">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>ชื่อผู้เช่า</th>
+          <th>เบอร์โทรศัพท์ / อีเมล</th>
+          <th>ห้องที่เช่าปัจจุบัน</th>
+          <th>สัญญาเช่า</th>
+          <th>เงินประกันคงเหลือ</th>
+          <th>ประวัติชำระ</th>
+          <th>การจัดการ</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let t of tenants">
+          <td class="font-bold">{{ t.name }}</td>
+          <td>
+            <div class="contact-cell">
+              <span>{{ t.phone }}</span>
+              <span class="sub-text">{{ t.email }}</span>
+            </div>
+          </td>
+          <td>{{ t.unit }}</td>
+          <td>
+            <span class="badge badge-emerald">{{ t.leaseNo }}</span>
+          </td>
+          <td class="font-mono">฿ {{ t.deposit | number }}</td>
+          <td>
+            <span class="badge badge-emerald">ตรงเวลาเสมอ</span>
+          </td>
+          <td>
+            <button class="btn btn-secondary btn-xs">ดูข้อมูล</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

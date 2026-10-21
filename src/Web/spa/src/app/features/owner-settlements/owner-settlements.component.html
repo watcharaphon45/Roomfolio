@@ -1,0 +1,75 @@
+<div class="page-container" *ngIf="data">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">สรุปยอดเงินนำส่งเจ้าของ (Owner Settlements)</h1>
+      <p class="page-subtitle">รวบรวมยอดเงินที่นายหน้ารับแทน หักค่าบริหาร/ค่าใช้จ่ายที่ตกลงไว้ และบันทึกหลักฐานการโอน</p>
+    </div>
+    <button class="btn btn-primary">+ สร้างรอบสรุปยอดใหม่ (Generate Settlement)</button>
+  </div>
+
+  <!-- Pipeline stages -->
+  <div class="pipeline-bar">
+    <div class="stage-step active">
+      <span class="stage-name">1. Draft (แบบร่าง)</span>
+      <span class="stage-count">{{ data.draftCount }} ราย</span>
+    </div>
+    <div class="stage-divider">→</div>
+    <div class="stage-step active">
+      <span class="stage-name">2. Review (ตรวจทาน)</span>
+      <span class="stage-count">{{ data.reviewCount }} ราย</span>
+    </div>
+    <div class="stage-divider">→</div>
+    <div class="stage-step active">
+      <span class="stage-name">3. Approved (อนุมัติโอน)</span>
+      <span class="stage-count">{{ data.approvedCount }} ราย</span>
+    </div>
+    <div class="stage-divider">→</div>
+    <div class="stage-step">
+      <span class="stage-name">4. Paid (โอนแล้วเสร็จ)</span>
+      <span class="stage-count">{{ data.paidCount }} ราย</span>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>รอบสรุปยอด / เจ้าของ</th>
+          <th>ค่าเช่ารับจริง</th>
+          <th>หักค่าใช้จ่าย</th>
+          <th>หักค่าบริหาร (Fee)</th>
+          <th>ยอดสุทธิที่ต้องโอน</th>
+          <th>สถานะรอบ</th>
+          <th>เอกสาร & สลิป</th>
+          <th>การดำเนินการ</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let s of data.settlements">
+          <td>
+            <div class="cell-main">
+              <span class="title">{{ s.owner }}</span>
+              <span class="sub">รอบ {{ s.period }} · {{ s.unitsCount }} ห้อง</span>
+            </div>
+          </td>
+          <td class="font-mono">฿ {{ s.gross | number }}</td>
+          <td class="font-mono text-rose">- ฿ {{ s.expense | number }}</td>
+          <td class="font-mono text-amber">- ฿ {{ s.fee | number }}</td>
+          <td class="font-mono font-bold text-emerald">฿ {{ s.net | number }}</td>
+          <td>
+            <span class="badge" [ngClass]="s.statusBadge">{{ s.status }}</span>
+          </td>
+          <td>
+            <span class="doc-link">📄 Statement PDF</span>
+          </td>
+          <td>
+            <div class="action-buttons">
+              <button class="btn btn-secondary btn-xs">เปิดตรวจ</button>
+              <button class="btn btn-primary btn-xs" *ngIf="s.status === 'อนุมัติแล้ว'">บันทึกโอน</button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -1,0 +1,67 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">สัญญาเช่า (Leases & Agreements)</h1>
+      <p class="page-subtitle">จัดการสัญญาเช่า เงื่อนไขวิธีรับชำระเงิน วันครบกำหนด และค่านายหน้าปล่อยเช่า</p>
+    </div>
+    <button class="btn btn-primary">+ ทำสัญญาใหม่</button>
+  </div>
+
+  <div class="filter-bar">
+    <input type="text" class="input-search" placeholder="ค้นหาเลขที่สัญญา, ห้อง, ผู้เช่า..." />
+    <div class="filter-pills">
+      <button class="pill active">สัญญาทั้งหมด (176)</button>
+      <button class="pill">Direct to Owner (112)</button>
+      <button class="pill">Through Agent (64)</button>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>เลขที่สัญญา / ห้อง</th>
+          <th>ผู้เช่า (Tenant)</th>
+          <th>ระยะเวลาสัญญา</th>
+          <th>ค่าเช่ารายเดือน</th>
+          <th>วิธีรับเงิน (Mode)</th>
+          <th>เงินประกัน</th>
+          <th>สถานะสัญญา</th>
+          <th>จัดการ</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let l of leases">
+          <td>
+            <div class="lease-cell">
+              <span class="lease-no">{{ l.leaseNumber }}</span>
+              <span class="unit-code">{{ l.unit }}</span>
+            </div>
+          </td>
+          <td>{{ l.tenant }}</td>
+          <td>
+            <div class="date-cell">
+              <span>{{ l.startDate }} - {{ l.endDate }}</span>
+              <span class="due-day">ครบกำหนดทุกวันที่ {{ l.dueDay }}</span>
+            </div>
+          </td>
+          <td class="font-mono font-bold">฿ {{ l.monthlyRent | number }}</td>
+          <td>
+            <span class="badge" [class.badge-emerald]="l.paymentMode === 'through_agent'" [class.badge-blue]="l.paymentMode === 'direct_to_owner'">
+              {{ l.paymentMode === 'through_agent' ? 'ผ่านนายหน้า' : 'จ่ายตรงเจ้าของ' }}
+            </span>
+          </td>
+          <td class="font-mono">฿ {{ l.deposit | number }}</td>
+          <td>
+            <span class="badge" [class.badge-emerald]="l.status === 'ใช้งานอยู่'" [class.badge-amber]="l.status === 'ใกล้หมดอายุ'">
+              {{ l.status }}
+            </span>
+          </td>
+          <td>
+            <button class="btn btn-secondary btn-xs">ดูสัญญา</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

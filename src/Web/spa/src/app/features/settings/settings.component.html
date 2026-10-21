@@ -1,0 +1,46 @@
+<div class="page-container" *ngIf="settings">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">ตั้งค่าระบบ (Settings)</h1>
+      <p class="page-subtitle">จัดการข้อมูลองค์กร ทีมงาน สิทธิ์การใช้งาน และแพ็กเกจการสมัครสมาชิก</p>
+    </div>
+  </div>
+
+  <div class="settings-grid">
+    <div class="settings-card">
+      <h2 class="card-title">ข้อมูลองค์กร (Organization Profile)</h2>
+      <div class="form-group">
+        <label>ชื่อองค์กร / เอเจนซี่</label>
+        <input type="text" [value]="settings.companyName" class="form-input" />
+      </div>
+      <div class="form-group">
+        <label>เลขประจำตัวผู้เสียภาษี (Tax ID)</label>
+        <input type="text" [value]="settings.taxId" class="form-input" />
+      </div>
+      <div class="form-group">
+        <label>สกุลเงินหลัก & Timezone</label>
+        <div class="input-row">
+          <input type="text" [value]="settings.defaultCurrency" disabled class="form-input" />
+          <input type="text" [value]="settings.timezone" disabled class="form-input" />
+        </div>
+      </div>
+      <button class="btn btn-primary btn-sm">บันทึกการเปลี่ยนแปลง</button>
+    </div>
+
+    <div class="settings-card">
+      <h2 class="card-title">แพ็กเกจการใช้งาน (Subscription Plan)</h2>
+      <div class="plan-box">
+        <div class="plan-header">
+          <span class="plan-name">{{ settings.planName }}</span>
+          <span class="badge badge-emerald">ใช้งานอยู่</span>
+        </div>
+        <div class="plan-price">฿ {{ settings.planPrice }} <span class="period">/ เดือน</span></div>
+        <p class="plan-limit">โควตาห้อง: {{ settings.roomCount }} / {{ settings.roomLimit }} ห้อง ({{ (settings.roomCount / settings.roomLimit) * 100 }}%)</p>
+        <div class="progress-bar">
+          <div class="progress-fill" [style.width.%]="(settings.roomCount / settings.roomLimit) * 100"></div>
+        </div>
+      </div>
+      <button class="btn btn-secondary btn-sm">อัปเกรดเป็น Business Plan</button>
+    </div>
+  </div>
+</div>

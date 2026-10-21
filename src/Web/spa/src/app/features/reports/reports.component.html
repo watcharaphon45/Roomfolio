@@ -1,0 +1,23 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">รายงานและเอกสาร (Reports & Statements)</h1>
+      <p class="page-subtitle">ส่งออกรายงานสรุปสำหรับเจ้าของห้อง (Owner Statement), รายงานภาษี และรายงานกระแสเงินสดนายหน้า</p>
+    </div>
+    <button class="btn btn-primary">ดาวน์โหลด Excel รวม</button>
+  </div>
+
+  <div class="reports-grid">
+    <div class="report-card" *ngFor="let r of reports">
+      <div class="report-icon-box" [innerHTML]="r.icon"></div>
+      <div class="report-info">
+        <h3 class="report-name">{{ r.title }}</h3>
+        <p class="report-desc">{{ r.desc }}</p>
+      </div>
+      <div class="report-footer">
+        <span class="badge badge-emerald">{{ r.format }}</span>
+        <button class="btn btn-secondary btn-xs">สร้างรายงาน</button>
+      </div>
+    </div>
+  </div>
+</div>

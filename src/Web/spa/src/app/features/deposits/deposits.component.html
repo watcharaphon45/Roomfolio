@@ -1,0 +1,51 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">เงินประกันห้องชุด (Security Deposits)</h1>
+      <p class="page-subtitle">บันทึกยอดเงินประกัน ผู้ถือเงิน (เจ้าของหรือนายหน้า) การคืน และการหักชดเชยความเสียหาย</p>
+    </div>
+    <button class="btn btn-primary">+ รับเงินประกัน</button>
+  </div>
+
+  <div class="table-card">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>สัญญา / ห้อง</th>
+          <th>ผู้เช่า</th>
+          <th>ผู้ถือเงินประกัน</th>
+          <th>ยอดเงินประกัน</th>
+          <th>หักชดเชย</th>
+          <th>ยอดคงเหลือ</th>
+          <th>สถานะ</th>
+          <th>จัดการ</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let d of deposits">
+          <td>
+            <div class="cell-main">
+              <span class="title">{{ d.unit }}</span>
+              <span class="sub">{{ d.leaseNo }}</span>
+            </div>
+          </td>
+          <td>{{ d.tenant }}</td>
+          <td>
+            <span class="badge" [class.badge-emerald]="d.holder === 'Agency (นายหน้าถือ)'" [class.badge-blue]="d.holder === 'Owner (เจ้าของถือ)'">
+              {{ d.holder }}
+            </span>
+          </td>
+          <td class="font-mono">฿ {{ d.initialAmount | number }}</td>
+          <td class="font-mono text-rose">฿ {{ d.deducted | number }}</td>
+          <td class="font-mono font-bold text-emerald">฿ {{ d.balance | number }}</td>
+          <td>
+            <span class="badge badge-emerald">{{ d.status }}</span>
+          </td>
+          <td>
+            <button class="btn btn-secondary btn-xs">ธุรกรรมเงินประกัน</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

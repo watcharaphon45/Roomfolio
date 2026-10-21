@@ -1,0 +1,218 @@
+<div class="dashboard-page" *ngIf="data">
+  <!-- Welcome Banner -->
+  <div class="welcome-header">
+    <div class="welcome-text">
+      <h1 class="welcome-title">ภาพรวมการบริหารพอร์ตห้องเช่า</h1>
+      <p class="welcome-desc">
+        ติดตามสถานะ {{ data.totalUnits }} ห้องชุด แยกความชัดเจนระหว่างเงินที่รับแทนเจ้าของ กับรายได้ค่าธรรมเนียมนายหน้า
+      </p>
+    </div>
+    <div class="header-actions">
+      <a routerLink="/rent-collection" class="btn btn-primary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        บันทึกการรับเงิน
+      </a>
+      <a routerLink="/owner-settlements" class="btn btn-secondary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+        </svg>
+        สรุปยอดส่งเจ้าของ
+      </a>
+    </div>
+  </div>
+
+  <!-- KPI Stat Cards -->
+  <div class="stat-grid">
+    <!-- Stat 1 -->
+    <div class="stat-card">
+      <div class="stat-header">
+        <span class="stat-label">ห้องทั้งหมดในความดูแล</span>
+        <span class="stat-icon-wrapper bg-blue-glow">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          </svg>
+        </span>
+      </div>
+      <div class="stat-value">{{ data.totalUnits }} <span class="stat-unit">ห้อง</span></div>
+      <div class="stat-footer">
+        <span class="badge badge-emerald">อัตราเช่า {{ data.occupancyRate }}%</span>
+        <span class="stat-note">ว่างพร้อมปล่อย {{ data.availableUnits }} ห้อง</span>
+      </div>
+    </div>
+
+    <!-- Stat 2 -->
+    <div class="stat-card highlight-card">
+      <div class="stat-header">
+        <span class="stat-label">เงินที่นายหน้าถืออยู่ (ถือแทนเจ้าของ)</span>
+        <span class="stat-icon-wrapper bg-emerald-glow">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+            <line x1="1" y1="10" x2="23" y2="10"></line>
+          </svg>
+        </span>
+      </div>
+      <div class="stat-value text-emerald">฿ {{ data.agencyCashHeld | number }}</div>
+      <div class="stat-footer">
+        <span class="badge badge-emerald">รับผ่านนายหน้า {{ data.cashHeldCount }} สัญญา</span>
+        <span class="stat-note">รอโอนให้เจ้าของ {{ data.ownersPending }} ราย</span>
+      </div>
+    </div>
+
+    <!-- Stat 3 -->
+    <div class="stat-card">
+      <div class="stat-header">
+        <span class="stat-label">ค่าเช่าเรียกเก็บเดือนนี้</span>
+        <span class="stat-icon-wrapper bg-purple-glow">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2dd4bf" stroke-width="2">
+            <line x1="12" y1="1" x2="12" y2="23"></line>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+          </svg>
+        </span>
+      </div>
+      <div class="stat-value">฿ {{ data.rentChargedThisMonth | number }}</div>
+      <div class="stat-footer">
+        <span class="badge badge-blue">ชำระแล้ว {{ data.rentCollectedPct }}%</span>
+        <span class="stat-note text-amber">ค้างชำระ ฿ {{ data.rentOutstanding | number }}</span>
+      </div>
+    </div>
+
+    <!-- Stat 4 -->
+    <div class="stat-card">
+      <div class="stat-header">
+        <span class="stat-label">รายได้ค่าบริหาร & คอมมิชชั่นค้างรับ</span>
+        <span class="stat-icon-wrapper bg-amber-glow">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2">
+            <circle cx="12" cy="8" r="7"></circle>
+            <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
+          </svg>
+        </span>
+      </div>
+      <div class="stat-value text-amber">฿ {{ data.agencyFeeReceivable | number }}</div>
+      <div class="stat-footer">
+        <span class="badge badge-amber">ค่าบริหาร {{ data.agencyFeeCount }} รายการ</span>
+        <span class="stat-note">หักในรอบโอนได้ ฿ {{ data.agencyFeeDeductible | number }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Two-Column Section -->
+  <div class="grid-2col">
+    <!-- Collection Mode Breakdown -->
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title">ช่องทางการรับค่าเช่า (Payment Mode)</h2>
+          <p class="panel-subtitle">แยกกระแสเงินอย่างเด็ดขาดเพื่อป้องกันเงินปะปน</p>
+        </div>
+        <span class="badge badge-blue">{{ data.totalUnits }} สัญญารวม</span>
+      </div>
+
+      <div class="mode-comparison">
+        <div class="mode-item direct-mode">
+          <div class="mode-header">
+            <div class="mode-badge">Direct to Owner</div>
+            <div class="mode-count">{{ data.directModeCount }} ห้อง ({{ data.directModePct }}%)</div>
+          </div>
+          <div class="mode-amount">฿ {{ data.directModeAmount | number }} / เดือน</div>
+          <p class="mode-desc">
+            ผู้เช่าโอนตรงเข้าบัญชีเจ้าของห้อง นายหน้าทำหน้าที่ยืนยันสถานะและออกรายงาน <strong>ยอดนี้ไม่เพิ่มเงินสดที่นายหน้าถืออยู่</strong>
+          </p>
+        </div>
+
+        <div class="mode-item through-agent-mode">
+          <div class="mode-header">
+            <div class="mode-badge bg-emerald">Through Agent</div>
+            <div class="mode-count">{{ data.throughAgentCount }} ห้อง ({{ data.throughAgentPct }}%)</div>
+          </div>
+          <div class="mode-amount text-emerald">฿ {{ data.throughAgentAmount | number }} / เดือน</div>
+          <p class="mode-desc">
+            ผู้เช่าโอนผ่านบัญชีนายหน้า นายหน้าบันทึกรับเงิน หักค่าบริหารตามตกลง และทำ <strong>Owner Settlement</strong> เพื่อส่งต่อเจ้าของ
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lease Expiry Alerts -->
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <h2 class="panel-title">สัญญาใกล้หมดอายุ (Expiring Soon)</h2>
+          <p class="panel-subtitle">ห้องที่ต้องเตรียมต่อสัญญาหรือหาผู้เช่าใหม่ล่วงหน้า</p>
+        </div>
+        <a routerLink="/leases" class="panel-link">ดูทั้งหมด</a>
+      </div>
+
+      <div class="expiry-list">
+        <div class="expiry-item" *ngFor="let lease of data.expiringLeases">
+          <div class="expiry-unit-info">
+            <span class="unit-code">{{ lease.unitNumber }}</span>
+            <span class="project-name">{{ lease.project }}</span>
+          </div>
+          <div class="expiry-tenant">
+            <span class="tenant-name">{{ lease.tenant }}</span>
+            <span class="rent-amount">฿ {{ lease.rent | number }}/ด.</span>
+          </div>
+          <div class="expiry-timeline">
+            <span class="badge" [class.badge-rose]="lease.daysLeft <= 15" [class.badge-amber]="lease.daysLeft > 15">
+              เหลือ {{ lease.daysLeft }} วัน
+            </span>
+            <span class="expiry-date">ครบ {{ lease.endDate }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Owner Settlement Summary Table Preview -->
+  <div class="panel">
+    <div class="panel-header">
+      <div>
+        <h2 class="panel-title">รอบการส่งเงินให้เจ้าของห้อง (Owner Settlements ประจำรอบ)</h2>
+        <p class="panel-subtitle">ตรวจสอบยอดรับจริง หักค่าใช้จ่าย/ค่าบริหาร และยอดสุทธิที่ต้องโอน</p>
+      </div>
+      <a routerLink="/owner-settlements" class="btn btn-secondary btn-sm">เปิดโมดูล Settlement</a>
+    </div>
+
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>เจ้าของห้อง (Owner)</th>
+            <th>จำนวนห้อง</th>
+            <th>ค่าเช่าที่รับจริง</th>
+            <th>หักค่าใช้จ่าย</th>
+            <th>หักค่าบริหาร (Fee)</th>
+            <th>ยอดสุทธิที่ต้องส่ง</th>
+            <th>สถานะ</th>
+            <th>การดำเนินการ</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of data.settlementPreviews">
+            <td>
+              <div class="owner-cell">
+                <span class="owner-name">{{ item.ownerName }}</span>
+                <span class="owner-bank">{{ item.bankAccount }}</span>
+              </div>
+            </td>
+            <td>{{ item.unitsCount }} ห้อง</td>
+            <td class="font-mono">฿ {{ item.grossRent | number }}</td>
+            <td class="font-mono text-rose">- ฿ {{ item.expenses | number }}</td>
+            <td class="font-mono text-amber">- ฿ {{ item.managementFee | number }}</td>
+            <td class="font-mono font-bold text-emerald">฿ {{ item.netPayable | number }}</td>
+            <td>
+              <span class="badge" [ngClass]="item.statusClass">{{ item.statusLabel }}</span>
+            </td>
+            <td>
+              <button class="btn btn-secondary btn-xs">ตรวจทาน</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

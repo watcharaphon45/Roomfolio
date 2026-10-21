@@ -1,0 +1,77 @@
+<div class="page-container" *ngIf="summary">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">ติดตามการรับค่าเช่า (Rent Collection)</h1>
+      <p class="page-subtitle">บันทึกเงินรับจริง จัดสรรเข้ายอดงวดค่าเช่า และแยกบัญชีเงินสดนายหน้ากับเงินเจ้าของ</p>
+    </div>
+    <button class="btn btn-primary">+ บันทึกการชำระเงิน (Record Payment)</button>
+  </div>
+
+  <!-- Quick Summary Cards -->
+  <div class="summary-cards">
+    <div class="summary-card">
+      <span class="card-label">ยอดที่ต้องเรียกเก็บงวดนี้</span>
+      <span class="card-val">฿ {{ summary.totalTarget | number }}</span>
+      <span class="card-sub">184 สัญญา</span>
+    </div>
+    <div class="summary-card">
+      <span class="card-label">รับเงินแล้ว (ชำระเต็ม/บางส่วน)</span>
+      <span class="card-val text-emerald">฿ {{ summary.totalCollected | number }}</span>
+      <span class="card-sub">161 รายการ</span>
+    </div>
+    <div class="summary-card">
+      <span class="card-label">ยอดคงค้าง (Outstanding)</span>
+      <span class="card-val text-rose">฿ {{ summary.totalOutstanding | number }}</span>
+      <span class="card-sub">23 สัญญาเกินกำหนด</span>
+    </div>
+    <div class="summary-card">
+      <span class="card-label">เงินที่นายหน้าถืออยู่ (รอส่ง)</span>
+      <span class="card-val text-blue">฿ {{ summary.agencyCashHeld | number }}</span>
+      <span class="card-sub">เฉพาะรายการ Through Agent</span>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>งวด / ห้อง</th>
+          <th>ผู้เช่า</th>
+          <th>กำหนดชำระ</th>
+          <th>ยอดที่ต้องเก็บ</th>
+          <th>ชำระแล้วจริง</th>
+          <th>ยอดคงค้าง</th>
+          <th>ช่องทางรับเงิน</th>
+          <th>สถานะงวด</th>
+          <th>จัดการ</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of summary.items">
+          <td>
+            <div class="cell-main">
+              <span class="title">{{ item.unit }}</span>
+              <span class="sub">งวด {{ item.period }}</span>
+            </div>
+          </td>
+          <td>{{ item.tenant }}</td>
+          <td>{{ item.dueDate }}</td>
+          <td class="font-mono">฿ {{ item.chargeAmount | number }}</td>
+          <td class="font-mono text-emerald font-bold">฿ {{ item.paidAmount | number }}</td>
+          <td class="font-mono" [class.text-rose]="item.outstanding > 0">฿ {{ item.outstanding | number }}</td>
+          <td>
+            <span class="badge" [class.badge-emerald]="item.mode === 'through_agent'" [class.badge-blue]="item.mode === 'direct_to_owner'">
+              {{ item.mode === 'through_agent' ? 'ผ่านนายหน้า' : 'ตรงเจ้าของ' }}
+            </span>
+          </td>
+          <td>
+            <span class="badge" [ngClass]="item.statusClass">{{ item.status }}</span>
+          </td>
+          <td>
+            <button class="btn btn-secondary btn-xs">จัดสรรยอด</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
