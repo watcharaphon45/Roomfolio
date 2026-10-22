@@ -1,12 +1,99 @@
 <div class="page-container">
+  <!-- Page Header -->
   <div class="page-header">
     <div>
       <h1 class="page-title">ค่าบริหาร & ค่านายหน้า (Agency Fees)</h1>
       <p class="page-subtitle">ติดตามรายได้ค่าบริหารรายเดือน ค่านายหน้าปล่อยเช่าครั้งเดียว และสถานะการเรียกเก็บเงินจริง</p>
     </div>
-    <button class="btn btn-primary">+ สร้างรายการเรียกเก็บ</button>
+    <button class="btn btn-primary" (click)="openCreateModal()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      + สร้างรายการเรียกเก็บ
+    </button>
   </div>
 
+  <!-- KPI Stat Cards -->
+  <div class="stat-grid">
+    <div class="stat-card highlight-card">
+      <div class="stat-label">รายได้รวมที่รับเงินแล้ว (Collected Revenue)</div>
+      <div class="stat-value text-emerald font-mono">฿ {{ collectedAmount | number }}</div>
+      <div class="stat-footer">
+        <span class="badge badge-emerald">รับเงินแล้ว</span>
+        <span class="stat-sub">รายได้ที่เข้ากระเป๋าจริง</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">รอนำส่ง / หักยอดใน Settlement</div>
+      <div class="stat-value text-amber font-mono">฿ {{ pendingDeductionAmount | number }}</div>
+      <div class="stat-footer">
+        <span class="badge badge-amber">รอรอบโอนเจ้าของ</span>
+        <span class="stat-sub">หักใน Statement อัตโนมัติ</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">ออกใบแจ้งหนี้รอชำระ (Invoiced)</div>
+      <div class="stat-value text-blue font-mono">฿ {{ invoicedAmount | number }}</div>
+      <div class="stat-footer">
+        <span class="badge badge-blue">รอรับชำระ</span>
+        <span class="stat-sub">ออก Invoice ให้เจ้าของแล้ว</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">ยอดค่าธรรมเนียมรวมทั้งหมด</div>
+      <div class="stat-value font-mono">฿ {{ totalAmount | number }}</div>
+      <div class="stat-footer">
+        <span class="badge badge-gray">{{ fees.length }} รายการ</span>
+        <span class="stat-sub">รวมทั้งสิ้นในระบบ</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter & Search Toolbar -->
+  <div class="toolbar-card">
+    <div class="search-box">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <input
+        type="text"
+        [(ngModel)]="searchTerm"
+        (input)="onFilterChange()"
+        placeholder="ค้นหาตามโครงการ, ห้องชุด, ชื่อเจ้าของ, หรือเลขที่ใบแจ้งหนี้..."
+      />
+    </div>
+
+    <div class="filter-actions">
+      <select [(ngModel)]="selectedFeeType" (change)="onFilterChange()" class="filter-select">
+        <option [ngValue]="null">ประเภทค่าบริการทั้งหมด</option>
+        <option [ngValue]="1">ค่าบริหารรายเดือน (Monthly)</option>
+        <option [ngValue]="2">ค่านายหน้าปล่อยเช่า (Commission)</option>
+        <option [ngValue]="3">ค่าธรรมเนียมต่อสัญญา (Renewal)</option>
+        <option [ngValue]="4">ค่าบริการอื่นๆ</option>
+      </select>
+
+      <select [(ngModel)]="selectedStatus" (change)="onFilterChange()" class="filter-select">
+        <option [ngValue]="null">สถานะทั้งหมด</option>
+        <option [ngValue]="1">รอนำส่ง/หักยอด</option>
+        <option [ngValue]="2">ออกใบแจ้งหนี้แล้ว</option>
+        <option [ngValue]="3">รับเงินแล้ว</option>
+      </select>
+
+      <select [(ngModel)]="selectedMethod" (change)="onFilterChange()" class="filter-select">
+        <option [ngValue]="null">วิธีรับเงินทั้งหมด</option>
+        <option [ngValue]="1">หักจาก Settlement</option>
+        <option [ngValue]="2">ออก Invoice แยก</option>
+        <option [ngValue]="3">ชำระตรง</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Agency Fees Data Table -->
   <div class="table-card">
     <table class="data-table">
       <thead>
@@ -18,7 +105,7 @@
           <th>จำนวนเงิน</th>
           <th>วิธีรับเงิน</th>
           <th>สถานะ</th>
-          <th>จัดการ</th>
+          <th style="text-align: right;">จัดการ</th>
         </tr>
       </thead>
       <tbody>
@@ -37,15 +124,198 @@
             <span class="badge badge-blue">{{ f.method }}</span>
           </td>
           <td>
-            <span class="badge" [class.badge-emerald]="f.status === 'รับเงินแล้ว'" [class.badge-amber]="f.status === 'รอนำส่ง/หักยอด'">
+            <span class="badge" [class.badge-emerald]="f.statusId === 3" [class.badge-amber]="f.statusId === 1" [class.badge-blue]="f.statusId === 2">
               {{ f.status }}
             </span>
           </td>
-          <td>
-            <button class="btn btn-secondary btn-xs">รายละเอียด</button>
+          <td style="text-align: right;">
+            <div class="action-btn-group">
+              <button class="btn btn-emerald-outline btn-xs" *ngIf="f.statusId !== 3" (click)="markAsCollected(f)">
+                รับเงินแล้ว
+              </button>
+              <button class="btn btn-secondary btn-xs" (click)="openDetail(f)">
+                รายละเอียด
+              </button>
+              <button class="btn btn-danger-outline btn-xs" (click)="deleteFee(f)">
+                ลบ
+              </button>
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="fees.length === 0">
+          <td colspan="8" class="empty-state">
+            <p>ไม่พบรายการค่าบริหารหรือค่านายหน้าที่ตรงกับเงื่อนไข</p>
           </td>
         </tr>
       </tbody>
     </table>
+  </div>
+</div>
+
+<!-- Modal: Create Agency Fee -->
+<div class="modal-backdrop" *ngIf="showCreateModal" (click)="closeCreateModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2 class="modal-title">สร้างรายการเรียกเก็บค่าบริการ</h2>
+      <button class="close-btn" (click)="closeCreateModal()">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="alert-error" *ngIf="modalErrorMessage">
+        {{ modalErrorMessage }}
+      </div>
+
+      <div class="form-group">
+        <label>ห้องชุด / โครงการ <span class="required">*</span></label>
+        <select [(ngModel)]="newFee.unitId" (change)="onUnitChange()" class="form-control">
+          <option value="" disabled>-- เลือกห้องชุด --</option>
+          <option *ngFor="let u of units" [value]="u.id">
+            {{ u.projectName }} {{ u.unitNumber }} ({{ u.ownerName || 'ไม่ระบุเจ้าของ' }})
+          </option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group col-half">
+          <label>ประเภทค่าบริการ <span class="required">*</span></label>
+          <select [(ngModel)]="newFee.feeType" (change)="onUnitChange()" class="form-control">
+            <option [ngValue]="1">ค่าบริหารรายเดือน (Monthly Management)</option>
+            <option [ngValue]="2">ค่านายหน้าปล่อยเช่า (Leasing Commission)</option>
+            <option [ngValue]="3">ค่าธรรมเนียมต่อสัญญา (Renewal Fee)</option>
+            <option [ngValue]="4">ค่าบริการอื่นๆ (Other Service)</option>
+          </select>
+        </div>
+
+        <div class="form-group col-half">
+          <label>งวด / รอบเวลา <span class="required">*</span></label>
+          <input type="text" [(ngModel)]="newFee.period" placeholder="เช่น ต.ค. 2026, สัญญา 1 ปี" class="form-control" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>รายละเอียดค่าบริการ <span class="required">*</span></label>
+        <input type="text" [(ngModel)]="newFee.description" placeholder="ระบุรายละเอียดค่าบริการ..." class="form-control" />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group col-half">
+          <label>วิธีคำนวณ / ฐานคำนวณ <span class="required">*</span></label>
+          <input type="text" [(ngModel)]="newFee.calculationBasis" placeholder="เช่น 5% ของค่าเช่า ฿38,000" class="form-control" />
+        </div>
+
+        <div class="form-group col-half">
+          <label>จำนวนเงิน (บาท) <span class="required">*</span></label>
+          <input
+            type="number"
+            [(ngModel)]="newFee.amount"
+            placeholder="0.00"
+            min="1"
+            class="form-control font-mono font-bold"
+          />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group col-half">
+          <label>วิธีรับเงิน <span class="required">*</span></label>
+          <select [(ngModel)]="newFee.collectionMethod" class="form-control">
+            <option [ngValue]="1">หักจากยอด Settlement</option>
+            <option [ngValue]="2">ออก Invoice แยก</option>
+            <option [ngValue]="3">รับชำระตรง</option>
+          </select>
+        </div>
+
+        <div class="form-group col-half">
+          <label>สถานะรายการ <span class="required">*</span></label>
+          <select [(ngModel)]="newFee.status" class="form-control">
+            <option [ngValue]="1">รอนำส่ง/หักยอด</option>
+            <option [ngValue]="2">ออกใบแจ้งหนี้แล้ว</option>
+            <option [ngValue]="3">รับเงินแล้ว</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group" *ngIf="newFee.collectionMethod === 2 || newFee.status === 2">
+        <label>เลขที่ใบแจ้งหนี้ (Invoice No.)</label>
+        <input type="text" [(ngModel)]="newFee.invoiceNo" placeholder="เช่น INV-2026-0043" class="form-control font-mono" />
+      </div>
+
+      <div class="form-group">
+        <label>บันทึกเพิ่มเติม</label>
+        <textarea [(ngModel)]="newFee.note" rows="2" placeholder="หมายเหตุเพิ่มเติม..." class="form-control"></textarea>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeCreateModal()" [disabled]="isSubmitting">ยกเลิก</button>
+      <button class="btn btn-primary" (click)="saveFee()" [disabled]="isSubmitting">
+        {{ isSubmitting ? 'กำลังบันทึก...' : 'บันทึกรายการ' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: View Fee Detail -->
+<div class="modal-backdrop" *ngIf="showDetailModal && selectedFee" (click)="closeDetail()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2 class="modal-title">รายละเอียดค่าบริการ</h2>
+      <button class="close-btn" (click)="closeDetail()">&times;</button>
+    </div>
+
+    <div class="modal-body detail-body">
+      <div class="detail-row">
+        <span class="detail-label">ประเภท:</span>
+        <span class="detail-value font-bold">{{ selectedFee.feeType }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">ห้องชุด:</span>
+        <span class="detail-value">{{ selectedFee.unit }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">ผู้มีหน้าที่จ่าย:</span>
+        <span class="detail-value">{{ selectedFee.payer }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">งวด / เงื่อนไข:</span>
+        <span class="detail-value">{{ selectedFee.period }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">วิธีคำนวณ:</span>
+        <span class="detail-value">{{ selectedFee.calcBasis }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">จำนวนเงิน:</span>
+        <span class="detail-value font-mono font-bold text-amber" style="font-size: 1.15rem;">
+          ฿ {{ selectedFee.amount | number }}
+        </span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">วิธีรับเงิน:</span>
+        <span class="detail-value badge badge-blue">{{ selectedFee.method }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">สถานะ:</span>
+        <span class="detail-value badge" [class.badge-emerald]="selectedFee.statusId === 3" [class.badge-amber]="selectedFee.statusId === 1">
+          {{ selectedFee.status }}
+        </span>
+      </div>
+      <div class="detail-row" *ngIf="selectedFee.invoiceNo">
+        <span class="detail-label">เลขที่ใบแจ้งหนี้:</span>
+        <span class="detail-value font-mono">{{ selectedFee.invoiceNo }}</span>
+      </div>
+      <div class="detail-row" *ngIf="selectedFee.collectedAt">
+        <span class="detail-label">วันที่รับเงิน:</span>
+        <span class="detail-value">{{ selectedFee.collectedAt }}</span>
+      </div>
+      <div class="detail-row" *ngIf="selectedFee.note">
+        <span class="detail-label">บันทึก:</span>
+        <span class="detail-value">{{ selectedFee.note }}</span>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeDetail()">ปิด</button>
+    </div>
   </div>
 </div>

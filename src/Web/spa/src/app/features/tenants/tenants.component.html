@@ -1,47 +1,220 @@
 <div class="page-container">
+  <!-- Header -->
   <div class="page-header">
     <div>
       <h1 class="page-title">ผู้เช่า (Tenants)</h1>
-      <p class="page-subtitle">ข้อมูลติดต่อผู้เช่า สัญญาเช่าปัจจุบัน ประวัติการชำระเงิน และเงินประกันห้องชุด</p>
+      <p class="page-subtitle">จัดการข้อมูลผู้เช่า สัญญาเช่าปัจจุบัน ช่องทางติดต่อ และเงินประกันห้องชุด (PostgreSQL Real DB)</p>
     </div>
-    <button class="btn btn-primary">+ เพิ่มผู้เช่า</button>
+    <button class="btn btn-primary" (click)="openCreateModal()">+ เพิ่มผู้เช่า</button>
   </div>
 
+  <!-- KPI summary chips -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <span class="kpi-label">ผู้เช่าทั้งหมดในระบบ</span>
+      <span class="kpi-value">{{ tenants.length }} <small class="kpi-unit">คน</small></span>
+    </div>
+    <div class="kpi-card">
+      <span class="kpi-label">กำลังมีสัญญาเช่าอยู่</span>
+      <span class="kpi-value text-emerald">{{ activeTenantsCount }} <small class="kpi-unit">ห้อง</small></span>
+    </div>
+    <div class="kpi-card">
+      <span class="kpi-label">ยอดเงินประกันรวมที่ดูแล</span>
+      <span class="kpi-value font-mono">฿ {{ totalDeposits | number:'1.0-0' }}</span>
+    </div>
+  </div>
+
+  <!-- Search & Filter Bar -->
+  <div class="filter-bar">
+    <div class="search-box">
+      <svg class="search-icon" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" />
+      </svg>
+      <input
+        type="text"
+        class="input-search"
+        placeholder="ค้นหาชื่อผู้เช่า, เบอร์โทร, อีเมล, Line ID, เลขห้อง หรือเลขที่สัญญา..."
+        [value]="searchTerm"
+        (input)="onSearch($event)"
+      />
+    </div>
+    <div class="count-pill">
+      แสดง <strong>{{ tenants.length }}</strong> รายการ
+    </div>
+  </div>
+
+  <!-- Tenants Table -->
   <div class="table-card">
     <table class="data-table">
       <thead>
         <tr>
-          <th>ชื่อผู้เช่า</th>
-          <th>เบอร์โทรศัพท์ / อีเมล</th>
+          <th>ชื่อผู้เช่า (Tenant)</th>
+          <th>ข้อมูลติดต่อ</th>
+          <th>Line / เอกสารระบุตัวตน</th>
           <th>ห้องที่เช่าปัจจุบัน</th>
           <th>สัญญาเช่า</th>
-          <th>เงินประกันคงเหลือ</th>
-          <th>ประวัติชำระ</th>
-          <th>การจัดการ</th>
+          <th>เงินประกัน</th>
+          <th>สถานะ</th>
+          <th style="text-align: right;">การจัดการ</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let t of tenants">
-          <td class="font-bold">{{ t.name }}</td>
           <td>
-            <div class="contact-cell">
-              <span>{{ t.phone }}</span>
-              <span class="sub-text">{{ t.email }}</span>
+            <div class="tenant-user-cell">
+              <div class="avatar">{{ getInitial(t.fullName) }}</div>
+              <div class="tenant-meta">
+                <span class="tenant-name font-bold">{{ t.fullName }}</span>
+                <span class="tenant-subtext" *ngIf="t.emergencyContact">ฉุกเฉิน: {{ t.emergencyContact }}</span>
+              </div>
             </div>
           </td>
-          <td>{{ t.unit }}</td>
           <td>
-            <span class="badge badge-emerald">{{ t.leaseNo }}</span>
-          </td>
-          <td class="font-mono">฿ {{ t.deposit | number }}</td>
-          <td>
-            <span class="badge badge-emerald">ตรงเวลาเสมอ</span>
+            <div class="contact-cell">
+              <span class="font-bold text-dark">{{ t.phone }}</span>
+              <span class="sub-text">{{ t.email || '-' }}</span>
+            </div>
           </td>
           <td>
-            <button class="btn btn-secondary btn-xs">ดูข้อมูล</button>
+            <div class="contact-cell">
+              <span class="line-badge" *ngIf="t.lineId">LINE: {{ t.lineId }}</span>
+              <span class="sub-text" *ngIf="t.idCardOrPassport">{{ t.idCardOrPassport }}</span>
+              <span class="sub-text text-muted" *ngIf="!t.lineId && !t.idCardOrPassport">-</span>
+            </div>
+          </td>
+          <td>
+            <span class="unit-tag" *ngIf="t.currentUnit">{{ t.currentUnit }}</span>
+            <span class="text-muted" *ngIf="!t.currentUnit">ยังไม่มีสัญญาเช่า</span>
+          </td>
+          <td>
+            <span class="badge badge-emerald" *ngIf="t.currentLeaseNumber">{{ t.currentLeaseNumber }}</span>
+            <span class="badge badge-gray" *ngIf="!t.currentLeaseNumber">-</span>
+          </td>
+          <td class="font-mono font-bold">
+            <span *ngIf="t.currentDeposit">฿ {{ t.currentDeposit | number:'1.0-0' }}</span>
+            <span class="text-muted" *ngIf="!t.currentDeposit">-</span>
+          </td>
+          <td>
+            <span class="badge" [class.badge-emerald]="t.status === 'Active'" [class.badge-gray]="t.status !== 'Active'">
+              {{ t.status === 'Active' ? 'ปกติ' : t.status }}
+            </span>
+          </td>
+          <td>
+            <div class="action-buttons">
+              <button class="btn btn-secondary btn-xs" (click)="openEditModal(t)" title="แก้ไขข้อมูล">
+                แก้ไข
+              </button>
+              <button class="btn btn-danger-subtle btn-xs" (click)="deleteTenant(t.id, t.fullName)" title="ลบผู้เช่า">
+                ลบ
+              </button>
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="tenants.length === 0">
+          <td colspan="8" class="empty-state">
+            ไม่พบข้อมูลผู้เช่าที่ตรงกับเงื่อนไขการค้นหา
           </td>
         </tr>
       </tbody>
     </table>
+  </div>
+
+  <!-- Create/Edit Modal -->
+  <div class="modal-backdrop" *ngIf="isModalOpen" (click)="closeModal()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">{{ isEditMode ? 'แก้ไขข้อมูลผู้เช่า' : 'เพิ่มผู้เช่าใหม่' }}</h2>
+        <button class="btn-close" (click)="closeModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">ชื่อ-นามสกุล ผู้เช่า <span class="required">*</span></label>
+          <input
+            type="text"
+            class="form-control"
+            placeholder="เช่น คุณกิตติศักดิ์ พูลสวัสดิ์ หรือ Mr. David Miller"
+            [(ngModel)]="currentTenant.fullName"
+          />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">เบอร์โทรศัพท์ <span class="required">*</span></label>
+            <input
+              type="text"
+              class="form-control"
+              placeholder="เช่น 081-998-1122"
+              [(ngModel)]="currentTenant.phone"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">อีเมล</label>
+            <input
+              type="email"
+              class="form-control"
+              placeholder="เช่น tenant@example.com"
+              [(ngModel)]="currentTenant.email"
+            />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">เลขบัตรประชาชน / Passport</label>
+            <input
+              type="text"
+              class="form-control"
+              placeholder="เช่น 1-1002-00334-11-2 หรือ GBR-992384102"
+              [(ngModel)]="currentTenant.idCardOrPassport"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">LINE ID</label>
+            <input
+              type="text"
+              class="form-control"
+              placeholder="เช่น kittisak_p"
+              [(ngModel)]="currentTenant.lineId"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">เบอร์ติดต่อกรณีฉุกเฉิน (Emergency Contact)</label>
+          <input
+            type="text"
+            class="form-control"
+            placeholder="เช่น 089-112-3344 (คุณวิภาดา - ภรรยา)"
+            [(ngModel)]="currentTenant.emergencyContact"
+          />
+        </div>
+
+        <div class="form-group" *ngIf="isEditMode">
+          <label class="form-label">สถานะผู้เช่า</label>
+          <select class="form-control" [(ngModel)]="currentTenant.status">
+            <option value="Active">Active (ปกติ)</option>
+            <option value="Inactive">Inactive (ไม่ได้เช่าอยู่)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">บันทึกเพิ่มเติม / หมายเหตุ</label>
+          <textarea
+            class="form-control"
+            rows="2"
+            placeholder="เช่น ผู้เช่าประวัติดี, บริษัทออกสัญญาให้ ฯลฯ"
+            [(ngModel)]="currentTenant.note"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeModal()" [disabled]="isSaving">ยกเลิก</button>
+        <button class="btn btn-primary" (click)="saveTenant()" [disabled]="isSaving">
+          {{ isSaving ? 'กำลังบันทึก...' : (isEditMode ? 'บันทึกการแก้ไข' : 'บันทึกผู้เช่า') }}
+        </button>
+      </div>
+    </div>
   </div>
 </div>

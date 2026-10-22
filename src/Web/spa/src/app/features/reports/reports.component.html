@@ -2,21 +2,85 @@
   <div class="page-header">
     <div>
       <h1 class="page-title">รายงานและเอกสาร (Reports & Statements)</h1>
-      <p class="page-subtitle">ส่งออกรายงานสรุปสำหรับเจ้าของห้อง (Owner Statement), รายงานภาษี และรายงานกระแสเงินสดนายหน้า</p>
+      <p class="page-subtitle">ส่งออกรายงานสรุปสำหรับเจ้าของห้อง (Owner Statement), รายงานภาษี และรายงานกระแสเงินสดนายหน้าแบบ Real-time</p>
     </div>
-    <button class="btn btn-primary">ดาวน์โหลด Excel รวม</button>
+    <button class="btn btn-primary" [disabled]="downloadingMaster" (click)="onDownloadMaster()">
+      <span *ngIf="downloadingMaster">กำลังดาวน์โหลด...</span>
+      <span *ngIf="!downloadingMaster">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px; vertical-align: text-bottom;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        ดาวน์โหลด Excel รวม
+      </span>
+    </button>
   </div>
 
+  <!-- Toast notification -->
+  <div *ngIf="toastMessage" class="toast-banner">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    <span>{{ toastMessage }}</span>
+  </div>
+
+  <!-- KPI Summary Cards -->
+  <div class="stats-overview-grid">
+    <div class="stat-card">
+      <div class="stat-label">รอบโอนเจ้าของ (Statements)</div>
+      <div class="stat-value">{{ summary.settlementCount }} <span class="stat-unit">รอบ</span></div>
+      <div class="stat-sub">โอนสุทธิรวม ฿ {{ summary.totalPaidToOwners | number:'1.2-2' }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">เงินรับแทนนายหน้า (Agency Held)</div>
+      <div class="stat-value emerald">฿ {{ summary.agencyCashHeld | number:'1.2-2' }}</div>
+      <div class="stat-sub">ยอดคงเหลือถือครองพร้อมจัดสรร</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">ยอดค่าเช่าค้างชำระ (Overdue)</div>
+      <div class="stat-value" [class.danger]="summary.overdueCount > 0">{{ summary.overdueCount }} <span class="stat-unit">รายการ</span></div>
+      <div class="stat-sub danger-sub">฿ {{ summary.overdueAmount | number:'1.2-2' }} รอติดตาม</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">สัญญาหมดอายุใน 90 วัน</div>
+      <div class="stat-value amber">{{ summary.expiringLeasesCount }} <span class="stat-unit">สัญญา</span></div>
+      <div class="stat-sub">จากห้องในระบบทั้งหมด {{ summary.totalUnits }} ห้อง</div>
+    </div>
+  </div>
+
+  <!-- Reports Grid -->
   <div class="reports-grid">
     <div class="report-card" *ngFor="let r of reports">
-      <div class="report-icon-box" [innerHTML]="r.icon"></div>
+      <div class="card-top">
+        <div class="report-icon-box">
+          <svg *ngIf="r.id === 'owner-statements'" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+          <svg *ngIf="r.id === 'agency-cash'" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+          <svg *ngIf="r.id === 'rent-due'" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+          <svg *ngIf="r.id === 'lease-expiry'" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+        </div>
+        <div class="badge-tag" *ngIf="r.id === 'owner-statements'">
+          {{ summary.settlementCount }} รอบในระบบ
+        </div>
+        <div class="badge-tag tag-emerald" *ngIf="r.id === 'agency-cash'">
+          ฿{{ summary.agencyCashHeld | number:'1.0-0' }}
+        </div>
+        <div class="badge-tag tag-rose" *ngIf="r.id === 'rent-due'">
+          {{ summary.overdueCount }} ค้างชำระ
+        </div>
+        <div class="badge-tag tag-amber" *ngIf="r.id === 'lease-expiry'">
+          {{ summary.expiringLeasesCount }} สัญญาใกล้ครบ
+        </div>
+      </div>
+
       <div class="report-info">
         <h3 class="report-name">{{ r.title }}</h3>
         <p class="report-desc">{{ r.desc }}</p>
       </div>
+
       <div class="report-footer">
-        <span class="badge badge-emerald">{{ r.format }}</span>
-        <button class="btn btn-secondary btn-xs">สร้างรายงาน</button>
+        <div class="format-tag">
+          <span class="badge badge-emerald">{{ r.format }}</span>
+          <span class="encoding-label">UTF-8 BOM (รองรับ Excel)</span>
+        </div>
+        <button class="btn btn-secondary btn-xs" [disabled]="downloadingId === r.id" (click)="onDownload(r)">
+          <span *ngIf="downloadingId === r.id">กำลังส่งออก...</span>
+          <span *ngIf="downloadingId !== r.id">ส่งออก CSV</span>
+        </button>
       </div>
     </div>
   </div>

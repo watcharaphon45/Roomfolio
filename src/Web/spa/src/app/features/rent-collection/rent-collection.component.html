@@ -1,77 +1,225 @@
 <div class="page-container" *ngIf="summary">
+  <!-- Page Header -->
   <div class="page-header">
     <div>
       <h1 class="page-title">ติดตามการรับค่าเช่า (Rent Collection)</h1>
-      <p class="page-subtitle">บันทึกเงินรับจริง จัดสรรเข้ายอดงวดค่าเช่า และแยกบัญชีเงินสดนายหน้ากับเงินเจ้าของ</p>
+      <p class="page-subtitle">บันทึกเงินรับจริง จัดสรรเข้ายอดงวดค่าเช่า และแยกบัญชีเงินสดนายหน้ากับเงินเจ้าของ (PostgreSQL Real DB)</p>
     </div>
-    <button class="btn btn-primary">+ บันทึกการชำระเงิน (Record Payment)</button>
+    <button class="btn btn-primary" (click)="openPaymentModal()">+ บันทึกการชำระเงิน (Record Payment)</button>
   </div>
 
-  <!-- Quick Summary Cards -->
+  <!-- 4 Core Financial Summary Cards -->
   <div class="summary-cards">
     <div class="summary-card">
       <span class="card-label">ยอดที่ต้องเรียกเก็บงวดนี้</span>
-      <span class="card-val">฿ {{ summary.totalTarget | number }}</span>
-      <span class="card-sub">184 สัญญา</span>
+      <span class="card-val font-mono">฿ {{ summary.totalTarget | number:'1.0-0' }}</span>
+      <span class="card-sub">{{ summary.totalChargesCount }} สัญญา/งวด</span>
     </div>
     <div class="summary-card">
       <span class="card-label">รับเงินแล้ว (ชำระเต็ม/บางส่วน)</span>
-      <span class="card-val text-emerald">฿ {{ summary.totalCollected | number }}</span>
-      <span class="card-sub">161 รายการ</span>
+      <span class="card-val text-emerald font-mono">฿ {{ summary.totalCollected | number:'1.0-0' }}</span>
+      <span class="card-sub">{{ summary.paidChargesCount }} รายการชำระ</span>
     </div>
     <div class="summary-card">
       <span class="card-label">ยอดคงค้าง (Outstanding)</span>
-      <span class="card-val text-rose">฿ {{ summary.totalOutstanding | number }}</span>
-      <span class="card-sub">23 สัญญาเกินกำหนด</span>
+      <span class="card-val font-mono" [class.text-rose]="summary.totalOutstanding > 0" [class.text-emerald]="summary.totalOutstanding === 0">
+        ฿ {{ summary.totalOutstanding | number:'1.0-0' }}
+      </span>
+      <span class="card-sub">{{ summary.pendingChargesCount }} รายการค้าง</span>
     </div>
-    <div class="summary-card">
-      <span class="card-label">เงินที่นายหน้าถืออยู่ (รอส่ง)</span>
-      <span class="card-val text-blue">฿ {{ summary.agencyCashHeld | number }}</span>
+    <div class="summary-card card-highlight">
+      <span class="card-label">เงินที่นายหน้าถืออยู่ (รอส่งเจ้าของ)</span>
+      <span class="card-val text-primary-brand font-mono">฿ {{ summary.agencyCashHeld | number:'1.0-0' }}</span>
       <span class="card-sub">เฉพาะรายการ Through Agent</span>
     </div>
   </div>
 
+  <!-- Filter & Search Bar -->
+  <div class="filter-bar">
+    <div class="search-box">
+      <svg class="search-icon" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" />
+      </svg>
+      <input
+        type="text"
+        class="input-search"
+        placeholder="ค้นหาห้องชุด, โครงการ, เลขที่สัญญา, หรือชื่อผู้เช่า..."
+        [value]="searchTerm"
+        (input)="onSearch($event)"
+      />
+    </div>
+
+    <div class="filter-pills">
+      <button class="pill" [class.active]="selectedPaymentMode === null" (click)="setPaymentModeFilter(null)">
+        รายการทั้งหมด ({{ summary.items.length }})
+      </button>
+      <button class="pill" [class.active]="selectedPaymentMode === 2" (click)="setPaymentModeFilter(2)">
+        ผ่านนายหน้า ({{ throughAgentCount }})
+      </button>
+      <button class="pill" [class.active]="selectedPaymentMode === 1" (click)="setPaymentModeFilter(1)">
+        จ่ายตรงเจ้าของ ({{ directToOwnerCount }})
+      </button>
+    </div>
+  </div>
+
+  <!-- Data Table Card -->
   <div class="table-card">
     <table class="data-table">
       <thead>
         <tr>
-          <th>งวด / ห้อง</th>
-          <th>ผู้เช่า</th>
+          <th>งวด / ห้องชุด</th>
+          <th>ผู้เช่า (Tenant)</th>
           <th>กำหนดชำระ</th>
           <th>ยอดที่ต้องเก็บ</th>
           <th>ชำระแล้วจริง</th>
           <th>ยอดคงค้าง</th>
           <th>ช่องทางรับเงิน</th>
           <th>สถานะงวด</th>
-          <th>จัดการ</th>
+          <th style="text-align: right;">การจัดการ</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let item of summary.items">
           <td>
             <div class="cell-main">
-              <span class="title">{{ item.unit }}</span>
-              <span class="sub">งวด {{ item.period }}</span>
+              <span class="unit-title font-bold">{{ item.projectName }} {{ item.unitNumber }}</span>
+              <span class="sub-text">งวด {{ item.period }} · {{ item.leaseNumber }}</span>
             </div>
           </td>
-          <td>{{ item.tenant }}</td>
-          <td>{{ item.dueDate }}</td>
-          <td class="font-mono">฿ {{ item.chargeAmount | number }}</td>
-          <td class="font-mono text-emerald font-bold">฿ {{ item.paidAmount | number }}</td>
-          <td class="font-mono" [class.text-rose]="item.outstanding > 0">฿ {{ item.outstanding | number }}</td>
           <td>
-            <span class="badge" [class.badge-emerald]="item.mode === 'through_agent'" [class.badge-blue]="item.mode === 'direct_to_owner'">
-              {{ item.mode === 'through_agent' ? 'ผ่านนายหน้า' : 'ตรงเจ้าของ' }}
+            <div class="contact-cell">
+              <span class="font-bold text-dark">{{ item.tenantName }}</span>
+              <span class="sub-text">{{ item.tenantPhone }}</span>
+            </div>
+          </td>
+          <td>
+            <span class="due-date">{{ item.dueDate }}</span>
+          </td>
+          <td class="font-mono font-bold text-dark">฿ {{ item.chargeAmount | number:'1.0-0' }}</td>
+          <td class="font-mono text-emerald font-bold">฿ {{ item.paidAmount | number:'1.0-0' }}</td>
+          <td class="font-mono" [class.text-rose]="item.outstanding > 0" [class.font-bold]="item.outstanding > 0">
+            ฿ {{ item.outstanding | number:'1.0-0' }}
+          </td>
+          <td>
+            <span class="badge" [class.badge-emerald]="item.paymentMode === 2" [class.badge-blue]="item.paymentMode === 1">
+              {{ item.paymentModeText }}
             </span>
           </td>
           <td>
-            <span class="badge" [ngClass]="item.statusClass">{{ item.status }}</span>
+            <span class="badge" [ngClass]="item.statusClass">{{ item.statusText }}</span>
           </td>
           <td>
-            <button class="btn btn-secondary btn-xs">จัดสรรยอด</button>
+            <div class="action-buttons">
+              <button
+                class="btn btn-primary btn-xs"
+                *ngIf="item.outstanding > 0"
+                (click)="openPaymentModal(item)"
+                title="บันทึกการชำระเงิน"
+              >
+                + บันทึกชำระ
+              </button>
+              <button
+                class="btn btn-secondary btn-xs"
+                *ngIf="item.outstanding === 0"
+                (click)="openPaymentModal(item)"
+                title="บันทึกเพิ่มเติม"
+              >
+                เพิ่มสลิป
+              </button>
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="summary.items.length === 0">
+          <td colspan="9" class="empty-state">
+            ไม่พบข้อมูลรายการค่าเช่าที่ตรงกับเงื่อนไขการค้นหา
           </td>
         </tr>
       </tbody>
     </table>
+  </div>
+
+  <!-- Record Payment Modal -->
+  <div class="modal-backdrop" *ngIf="isPaymentModalOpen" (click)="closePaymentModal()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">บันทึกการชำระเงินค่าเช่า (Record Payment)</h2>
+        <button class="btn-close" (click)="closePaymentModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">งวดค่าเช่าและห้องชุด <span class="required">*</span></label>
+          <select class="form-control" [(ngModel)]="paymentForm.rentChargeId" (change)="onChargeSelectionChanged()">
+            <option value="" disabled>-- เลือกงวดค่าเช่า --</option>
+            <option *ngFor="let c of summary.items" [value]="c.id">
+              {{ c.projectName }} {{ c.unitNumber }} ({{ c.tenantName }}) · คงค้าง ฿{{ c.outstanding | number }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">จำนวนเงินที่ชำระ (บาท) <span class="required">*</span></label>
+            <input
+              type="number"
+              class="form-control font-mono font-bold"
+              placeholder="เช่น 45000"
+              [(ngModel)]="paymentForm.amount"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">วันที่ชำระเงิน <span class="required">*</span></label>
+            <input type="date" class="form-control" [(ngModel)]="paymentForm.paymentDate" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">ช่องทางการชำระเงิน</label>
+            <select class="form-control" [(ngModel)]="paymentForm.method">
+              <option [ngValue]="1">โอนเงินผ่านธนาคาร (Bank Transfer)</option>
+              <option [ngValue]="3">พร้อมเพย์ QR Code</option>
+              <option [ngValue]="2">เงินสด (Cash)</option>
+              <option [ngValue]="4">อื่นๆ</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">ผู้รับเงินจริง</label>
+            <select class="form-control" [(ngModel)]="paymentForm.receivedByParty">
+              <option [ngValue]="3">นายหน้ารับแทน (เงินอยู่นายหน้ารอส่งต่อ)</option>
+              <option [ngValue]="2">เจ้าของรับโดยตรง (ตรงเข้าบัญชีเจ้าของ)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">เลขที่อ้างอิงสลิป / รหัสธุรกรรม</label>
+          <input
+            type="text"
+            class="form-control font-mono"
+            placeholder="เช่น KBANK-20261022-99881 หรือ SCB-PROMPT-1102"
+            [(ngModel)]="paymentForm.referenceNo"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">หมายเหตุ / ข้อมูลเพิ่มเติม</label>
+          <textarea
+            class="form-control"
+            rows="2"
+            placeholder="เช่น สลิปโอนเข้าบัญชีบริษัทเรียบร้อย, ผู้เช่าขอจ่ายส่วนที่เหลือสิ้นเดือน ฯลฯ"
+            [(ngModel)]="paymentForm.note"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closePaymentModal()" [disabled]="isSaving">ยกเลิก</button>
+        <button class="btn btn-primary" (click)="submitPayment()" [disabled]="isSaving">
+          {{ isSaving ? 'กำลังบันทึก...' : 'ยืนยันการรับชำระเงิน' }}
+        </button>
+      </div>
+    </div>
   </div>
 </div>

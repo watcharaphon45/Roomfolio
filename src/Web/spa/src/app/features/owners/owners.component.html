@@ -1,45 +1,159 @@
 <div class="page-container">
   <div class="page-header">
     <div>
-      <h1 class="page-title">เจ้าของห้อง (Owners)</h1>
-      <p class="page-subtitle">ข้อมูลติดต่อ ข้อตกลงการคิดค่าบริหาร บัญชีรับเงิน และสถานะสรุปเงินรายบุคคล</p>
+      <div class="header-badge-row">
+        <h1 class="page-title">เจ้าของห้อง (Owners & Landlords)</h1>
+        <span class="badge badge-emerald">
+          <span class="pulse-dot-sm"></span> ต่อฐานข้อมูล PostgreSQL สด
+        </span>
+      </div>
+      <p class="page-subtitle">จัดการข้อมูลเจ้าของห้อง บัญชีรับโอนเงิน และห้องชุดในการครอบครอง (CRUD สดผ่าน DB)</p>
     </div>
-    <button class="btn btn-primary">+ เพิ่มเจ้าของใหม่</button>
+    <button class="btn btn-primary" (click)="openCreateModal()">+ เพิ่มเจ้าของห้องใหม่</button>
+  </div>
+
+  <div class="filter-bar">
+    <input
+      type="text"
+      class="input-search"
+      placeholder="ค้นหาตามชื่อเจ้าของ, เบอร์โทร, อีเมล, เลขบัญชี หรือเลขห้อง..."
+      [value]="searchTerm"
+      (input)="onSearch($event)" />
+
+    <span class="total-count-badge">ทั้งหมด {{ owners.length }} ราย</span>
   </div>
 
   <div class="cards-grid">
-    <div class="owner-card" *ngFor="let o of owners">
-      <div class="owner-header">
-        <div class="owner-avatar">{{ o.initial }}</div>
-        <div class="owner-title-box">
-          <span class="owner-name">{{ o.name }}</span>
-          <span class="owner-phone">{{ o.phone }} · {{ o.email }}</span>
+    @for (o of owners; track o.id) {
+      <div class="owner-card">
+        <div class="owner-header">
+          <div class="owner-avatar">{{ getInitial(o.fullName) }}</div>
+          <div class="owner-title-box">
+            <span class="owner-name">{{ o.fullName }}</span>
+            <span class="owner-phone">{{ o.phone }}</span>
+          </div>
+          <span class="badge badge-emerald">{{ o.unitsCount }} ห้องชุด</span>
         </div>
-        <span class="badge badge-emerald">{{ o.unitsCount }} ห้อง</span>
+
+        <div class="owner-body">
+          @if (o.email) {
+            <div class="detail-row">
+              <span class="detail-label">อีเมล:</span>
+              <span class="detail-val">{{ o.email }}</span>
+            </div>
+          }
+          @if (o.lineId) {
+            <div class="detail-row">
+              <span class="detail-label">LINE ID:</span>
+              <span class="detail-val text-emerald font-bold">&#64;{{ o.lineId }}</span>
+            </div>
+          }
+          <div class="detail-row">
+            <span class="detail-label">ธนาคารรับเงินโอน:</span>
+            <span class="detail-val">{{ o.bankName || 'ยังไม่ระบุ' }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">เลขที่บัญชี:</span>
+            <span class="detail-val font-mono">{{ o.bankAccountNumber || 'ยังไม่ระบุ' }}</span>
+          </div>
+          @if (o.unitNumbers && o.unitNumbers.length > 0) {
+            <div class="detail-row unit-tags-row">
+              <span class="detail-label">ห้องชุดที่ถือครอง:</span>
+              <div class="unit-tags">
+                @for (u of o.unitNumbers; track u) {
+                  <span class="unit-tag">{{ u }}</span>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        <div class="owner-footer">
+          <div class="owner-actions">
+            <button class="btn btn-secondary btn-xs" (click)="openEditModal(o)">แก้ไข</button>
+            <button class="btn btn-secondary btn-xs btn-danger-subtle" (click)="deleteOwner(o.id, o.fullName)">ลบ</button>
+          </div>
+          <span class="timestamp-label">บันทึกเมื่อ: {{ o.createdAt ? (o.createdAt | date:'shortDate') : '-' }}</span>
+        </div>
+      </div>
+    } @empty {
+      <div class="empty-state-card">
+        @if (isLoading) {
+          <span>กำลังโหลดข้อมูลเจ้าของห้องจาก PostgreSQL...</span>
+        } @else {
+          <span>ไม่พบข้อมูลเจ้าของห้องตามคำค้นหา</span>
+        }
+      </div>
+    }
+  </div>
+</div>
+
+<!-- Modal: เพิ่ม / แก้ไข เจ้าของห้อง -->
+@if (isModalOpen) {
+  <div class="modal-backdrop" (click)="closeModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">
+          {{ isEditMode ? 'แก้ไขข้อมูลเจ้าของห้อง (Edit Owner)' : 'เพิ่มเจ้าของห้องใหม่ (Create Owner)' }}
+        </h2>
+        <button class="modal-close-btn" (click)="closeModal()">✕</button>
       </div>
 
-      <div class="owner-body">
-        <div class="detail-row">
-          <span class="detail-label">ข้อตกลงค่าบริหาร:</span>
-          <span class="detail-val text-emerald font-bold">{{ o.feeTerms }}</span>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-field">
+            <label class="form-label">ชื่อ - นามสกุล *</label>
+            <input type="text" class="form-input" [(ngModel)]="currentOwner.fullName" placeholder="เช่น คุณสมชาย วงศ์สวัสดิ์" />
+          </div>
+
+          <div class="form-field">
+            <label class="form-label">เบอร์โทรศัพท์ติดต่อ *</label>
+            <input type="text" class="form-input" [(ngModel)]="currentOwner.phone" placeholder="เช่น 081-445-6789" />
+          </div>
         </div>
-        <div class="detail-row">
-          <span class="detail-label">วิธีเก็บค่าบริหาร:</span>
-          <span class="detail-val">{{ o.collectionMethod }}</span>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label class="form-label">อีเมล</label>
+            <input type="email" class="form-input" [(ngModel)]="currentOwner.email" placeholder="owner@gmail.com" />
+          </div>
+
+          <div class="form-field">
+            <label class="form-label">LINE ID</label>
+            <input type="text" class="form-input" [(ngModel)]="currentOwner.lineId" placeholder="somchai_line" />
+          </div>
         </div>
-        <div class="detail-row">
-          <span class="detail-label">บัญชีรับเงินโอน:</span>
-          <span class="detail-val">{{ o.bankAccount }}</span>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label class="form-label">ธนาคารสำหรับโอนเงินค่าเช่า</label>
+            <select class="form-select" [(ngModel)]="currentOwner.bankName">
+              <option value="ธ.กสิกรไทย (KBANK)">ธ.กสิกรไทย (KBANK)</option>
+              <option value="ธ.ไทยพาณิชย์ (SCB)">ธ.ไทยพาณิชย์ (SCB)</option>
+              <option value="ธ.กรุงเทพ (BBL)">ธ.กรุงเทพ (BBL)</option>
+              <option value="ธ.กรุงไทย (KTB)">ธ.กรุงไทย (KTB)</option>
+              <option value="ธ.กรุงศรีอยุธยา (BAY)">ธ.กรุงศรีอยุธยา (BAY)</option>
+              <option value="ธ.ทหารไทยธนชาต (TTB)">ธ.ทหารไทยธนชาต (TTB)</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label class="form-label">เลขที่บัญชีธนาคาร</label>
+            <input type="text" class="form-input font-mono" [(ngModel)]="currentOwner.bankAccountNumber" placeholder="xxx-x-xxxxx-x" />
+          </div>
         </div>
       </div>
 
-      <div class="owner-footer">
-        <div class="settlement-status">
-          <span class="label">ยอดรอนำส่งรอบนี้</span>
-          <span class="value font-mono">฿ {{ o.pendingSettlement | number }}</span>
-        </div>
-        <button class="btn btn-secondary btn-xs">ออก Statement</button>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeModal()">ยกเลิก</button>
+        <button class="btn btn-primary" [disabled]="isSaving" (click)="saveOwner()">
+          @if (isSaving) {
+            กำลังบันทึกลง DB...
+          } @else {
+            {{ isEditMode ? 'อัปเดตข้อมูลลงฐานข้อมูล' : 'บันทึกเข้าสู่ฐานข้อมูล' }}
+          }
+        </button>
       </div>
     </div>
   </div>
-</div>
+}

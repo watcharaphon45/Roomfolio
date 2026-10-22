@@ -1,22 +1,154 @@
 .page-container { display: flex; flex-direction: column; gap: 24px; }
 .page-header { display: flex; justify-content: space-between; align-items: center; }
-.page-title { font-size: 1.5rem; font-weight: 800; }
+.page-title { font-size: 1.5rem; font-weight: 800; color: var(--text-primary); }
 .page-subtitle { font-size: 0.85rem; color: var(--text-secondary); margin-top: 2px; }
-.reports-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+
+.toast-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: var(--radius-md);
+  color: #065f46;
+  font-size: 0.875rem;
+  font-weight: 600;
+  animation: slideDown 0.3s ease;
+}
+
+.stats-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.stat-card {
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.stat-value.emerald { color: #059669; }
+.stat-value.amber { color: #d97706; }
+.stat-value.danger { color: #dc2626; }
+.stat-unit { font-size: 0.85rem; font-weight: 500; color: var(--text-muted); }
+
+.stat-sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.stat-sub.danger-sub { color: #b91c1c; font-weight: 500; }
+
+.reports-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 20px;
+}
+
 .report-card {
-  background: var(--bg-card); border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg); padding: 22px; display: flex; flex-direction: column; gap: 16px;
+  background: #ffffff;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
 }
+
+.report-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: var(--shadow-md);
+}
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .report-icon-box {
-  width: 44px; height: 44px; border-radius: var(--radius-md);
-  background: rgba(16, 185, 129, 0.12); display: flex; align-items: center; justify-content: center;
-  color: var(--emerald-400);
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background: rgba(16, 185, 129, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #059669;
 }
+
+.badge-tag {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.badge-tag.tag-emerald { background: #dcfce7; color: #15803d; }
+.badge-tag.tag-rose { background: #ffe4e6; color: #be123c; }
+.badge-tag.tag-amber { background: #fef3c7; color: #b45309; }
+
 .report-info { display: flex; flex-direction: column; gap: 6px; }
 .report-name { font-size: 1.05rem; font-weight: 700; color: var(--text-primary); }
 .report-desc { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.45; }
+
 .report-footer {
-  display: flex; justify-content: space-between; align-items: center;
-  padding-top: 14px; border-top: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-subtle);
+  gap: 8px;
 }
-.btn-xs { padding: 4px 10px; font-size: 0.75rem; }
+
+.format-tag {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.encoding-label {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+.btn-xs {
+  padding: 6px 14px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}

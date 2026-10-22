@@ -1,18 +1,38 @@
 <div class="page-container">
   <div class="page-header">
     <div>
-      <h1 class="page-title">โครงการและห้องชุด (Projects & Units)</h1>
-      <p class="page-subtitle">จัดการข้อมูลห้องชุด 184 ห้อง เจ้าของร่วม สัดส่วนการถือครอง และสถานะการปล่อยเช่า</p>
+      <div class="header-badge-row">
+        <h1 class="page-title">โครงการและห้องชุด (Projects & Units)</h1>
+        <span class="badge badge-emerald">
+          <span class="pulse-dot-sm"></span> ต่อฐานข้อมูล PostgreSQL สด
+        </span>
+      </div>
+      <p class="page-subtitle">จัดการข้อมูลห้องชุดในความดูแล ทดลองเพิ่ม แก้ไข ลบ (CRUD) แบบเรียลไทม์ผ่าน API & Database</p>
     </div>
-    <button class="btn btn-primary">+ เพิ่มห้องชุดใหม่</button>
+    <button class="btn btn-primary" (click)="openCreateModal()">+ เพิ่มห้องชุดใหม่</button>
   </div>
 
   <div class="filter-bar">
-    <input type="text" class="input-search" placeholder="ค้นหาตามชื่อโครงการ, เลขห้อง, อาคาร..." />
+    <input
+      type="text"
+      class="input-search"
+      placeholder="ค้นหาตามเลขห้อง, โครงการ, ผู้เช่า หรือเจ้าของ..."
+      [value]="searchTerm"
+      (input)="onSearch($event)" />
+
     <div class="filter-pills">
-      <button class="pill active">ทั้งหมด (184)</button>
-      <button class="pill">มีผู้เช่า (176)</button>
-      <button class="pill">ห้องว่าง (8)</button>
+      <button class="pill" [class.active]="selectedStatus === null" (click)="filterByStatus(null)">
+        ทั้งหมด ({{ units.length }})
+      </button>
+      <button class="pill" [class.active]="selectedStatus === 1" (click)="filterByStatus(1)">
+        ห้องว่าง
+      </button>
+      <button class="pill" [class.active]="selectedStatus === 2" (click)="filterByStatus(2)">
+        ติดสัญญาเช่า
+      </button>
+      <button class="pill" [class.active]="selectedStatus === 3" (click)="filterByStatus(3)">
+        ซ่อมบำรุง
+      </button>
     </div>
   </div>
 
@@ -21,41 +41,181 @@
       <thead>
         <tr>
           <th>ห้อง / โครงการ</th>
-          <th>ประเภท</th>
-          <th>พื้นที่</th>
+          <th>ชั้น / ขนาด</th>
           <th>เจ้าของห้อง (Owner)</th>
-          <th>สถานะห้อง</th>
+          <th>รูปแบบการรับเงิน</th>
+          <th>สถานะ</th>
           <th>ค่าเช่าต่อเดือน</th>
           <th>การจัดการ</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let u of units">
-          <td>
-            <div class="unit-cell">
-              <span class="unit-no">{{ u.unitNumber }}</span>
-              <span class="project-name">{{ u.project }}</span>
-            </div>
-          </td>
-          <td>{{ u.type }}</td>
-          <td>{{ u.area }} ตร.ม.</td>
-          <td>
-            <div class="owner-cell">
-              <span>{{ u.owner }}</span>
-              <span class="ownership-pct">{{ u.ownership }}</span>
-            </div>
-          </td>
-          <td>
-            <span class="badge" [class.badge-emerald]="u.status === 'มีผู้เช่า'" [class.badge-blue]="u.status === 'ว่าง'">
-              {{ u.status }}
-            </span>
-          </td>
-          <td class="font-mono font-bold">฿ {{ u.rent | number }}</td>
-          <td>
-            <button class="btn btn-secondary btn-xs">รายละเอียด</button>
-          </td>
-        </tr>
+        @for (u of units; track u.id) {
+          <tr>
+            <td>
+              <div class="unit-cell">
+                <span class="unit-no">{{ u.unitNumber }}</span>
+                <span class="project-name">{{ u.projectName }}</span>
+              </div>
+            </td>
+            <td>
+              <div class="unit-cell">
+                <span>ชั้น {{ u.floor }} ({{ u.bedrooms }} นอน, {{ u.bathrooms }} น้ำ)</span>
+                <span class="project-name">{{ u.areaSqM }} ตร.ม.</span>
+              </div>
+            </td>
+            <td>
+              <div class="owner-cell">
+                <span>{{ u.ownerName || 'ยังไม่ระบุเจ้าของ' }}</span>
+                @if (u.ownerPhone) {
+                  <span class="ownership-pct">{{ u.ownerPhone }}</span>
+                }
+              </div>
+            </td>
+            <td>
+              <span class="badge" [class.badge-blue]="u.paymentMode === 1" [class.badge-emerald]="u.paymentMode === 2">
+                {{ u.paymentModeText }}
+              </span>
+            </td>
+            <td>
+              <span class="badge"
+                [class.badge-emerald]="u.status === 2"
+                [class.badge-blue]="u.status === 1"
+                [class.badge-amber]="u.status === 3">
+                {{ u.statusText }}
+              </span>
+            </td>
+            <td class="font-mono font-bold text-emerald">฿ {{ u.targetRentPrice | number }}</td>
+            <td>
+              <div class="action-btn-group">
+                <button class="btn btn-secondary btn-xs" (click)="deleteUnit(u.id, u.unitNumber)" title="ลบห้องชุดนี้">
+                  ลบห้อง
+                </button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="7" class="empty-state-cell">
+              @if (isLoading) {
+                <span>กำลังโหลดข้อมูลจาก PostgreSQL...</span>
+              } @else {
+                <span>ไม่พบข้อมูลห้องชุดตามเงื่อนไขที่ค้นหา</span>
+              }
+            </td>
+          </tr>
+        }
       </tbody>
     </table>
   </div>
 </div>
+
+<!-- Modal: เพิ่มห้องชุดใหม่ -->
+@if (isModalOpen) {
+  <div class="modal-backdrop" (click)="closeModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">เพิ่มห้องชุดใหม่เข้าสู่ระบบ (Create Unit)</h2>
+        <button class="modal-close-btn" (click)="closeModal()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-field">
+            <label class="form-label">โครงการคอนโด *</label>
+            <select class="form-select" [(ngModel)]="newUnit.projectId">
+              @for (p of projects; track p.id) {
+                <option [value]="p.id">{{ p.name }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label class="form-label">เจ้าของห้อง (Owner)</label>
+            <select class="form-select" [(ngModel)]="newUnit.ownerId">
+              <option [ngValue]="null">-- ยังไม่ระบุเจ้าของ --</option>
+              @for (o of owners; track o.id) {
+                <option [value]="o.id">{{ o.fullName }} ({{ o.phone }})</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label class="form-label">เลขที่ห้องชุด *</label>
+            <input type="text" class="form-input" [(ngModel)]="newUnit.unitNumber" placeholder="เช่น #1804" />
+          </div>
+
+          <div class="form-field">
+            <label class="form-label">ชั้น</label>
+            <input type="number" class="form-input" [(ngModel)]="newUnit.floor" placeholder="18" />
+          </div>
+
+          <div class="form-field">
+            <label class="form-label">อาคาร/ตึก</label>
+            <input type="text" class="form-input" [(ngModel)]="newUnit.building" placeholder="A" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label class="form-label">จำนวนห้องนอน</label>
+            <input type="number" class="form-input" [(ngModel)]="newUnit.bedrooms" min="1" max="10" />
+          </div>
+
+          <div class="form-field">
+            <label class="form-label">จำนวนห้องน้ำ</label>
+            <input type="number" class="form-input" [(ngModel)]="newUnit.bathrooms" min="1" max="10" />
+          </div>
+
+          <div class="form-field">
+            <label class="form-label">พื้นที่ห้อง (ตร.ม.)</label>
+            <input type="number" class="form-input" [(ngModel)]="newUnit.areaSqM" placeholder="45.5" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-field">
+            <label class="form-label">ราคาค่าเช่าที่ตั้งไว้ (฿/เดือน) *</label>
+            <input type="number" class="form-input" [(ngModel)]="newUnit.targetRentPrice" placeholder="35000" />
+          </div>
+
+          <div class="form-field">
+            <label class="form-label">รูปแบบการรับค่าเช่า</label>
+            <select class="form-select" [(ngModel)]="newUnit.paymentMode">
+              <option [ngValue]="1">จ่ายตรงเจ้าของ (Direct to Owner)</option>
+              <option [ngValue]="2">ผ่านนายหน้า (Through Agent)</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label class="form-label">สถานะเริ่มต้น</label>
+            <select class="form-select" [(ngModel)]="newUnit.status">
+              <option [ngValue]="1">ห้องว่าง (Available)</option>
+              <option [ngValue]="2">ติดสัญญาเช่า (Rented)</option>
+              <option [ngValue]="3">ซ่อมบำรุง (Maintenance)</option>
+              <option [ngValue]="4">จองแล้ว (Reserved)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">หมายเหตุเพิ่มเติม</label>
+          <input type="text" class="form-input" [(ngModel)]="newUnit.note" placeholder="รายละเอียด เช่น ตกแต่งใหม่, ทิศตะวันออก, วิวสระว่ายน้ำ" />
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeModal()">ยกเลิก</button>
+        <button class="btn btn-primary" [disabled]="isSaving" (click)="saveUnit()">
+          @if (isSaving) {
+            กำลังบันทึกลง DB...
+          } @else {
+            บันทึกเข้าสู่ฐานข้อมูล
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}

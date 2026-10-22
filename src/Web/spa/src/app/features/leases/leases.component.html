@@ -1,67 +1,259 @@
 <div class="page-container">
+  <!-- Header -->
   <div class="page-header">
     <div>
       <h1 class="page-title">สัญญาเช่า (Leases & Agreements)</h1>
-      <p class="page-subtitle">จัดการสัญญาเช่า เงื่อนไขวิธีรับชำระเงิน วันครบกำหนด และค่านายหน้าปล่อยเช่า</p>
+      <p class="page-subtitle">จัดการสัญญาเช่า เงื่อนไขวิธีรับชำระเงิน วันครบกำหนด และเงินประกันห้องชุด (PostgreSQL Real DB)</p>
     </div>
-    <button class="btn btn-primary">+ ทำสัญญาใหม่</button>
+    <button class="btn btn-primary" (click)="openCreateModal()">+ ทำสัญญาใหม่</button>
   </div>
 
+  <!-- KPI summary chips -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <span class="kpi-label">สัญญาทั้งหมดในระบบ</span>
+      <span class="kpi-value">{{ leases.length }} <small class="kpi-unit">ฉบับ</small></span>
+    </div>
+    <div class="kpi-card">
+      <span class="kpi-label">จ่ายตรงเจ้าของ (Direct to Owner)</span>
+      <span class="kpi-value text-blue">{{ directToOwnerCount }} <small class="kpi-unit">ฉบับ</small></span>
+    </div>
+    <div class="kpi-card">
+      <span class="kpi-label">ผ่านนายหน้า (Through Agent)</span>
+      <span class="kpi-value text-emerald">{{ throughAgentCount }} <small class="kpi-unit">ฉบับ</small></span>
+    </div>
+    <div class="kpi-card">
+      <span class="kpi-label">ค่าเช่ารวมรายเดือนที่ดูแล</span>
+      <span class="kpi-value font-mono">฿ {{ totalMonthlyRent | number:'1.0-0' }}</span>
+    </div>
+  </div>
+
+  <!-- Filter & Search Bar -->
   <div class="filter-bar">
-    <input type="text" class="input-search" placeholder="ค้นหาเลขที่สัญญา, ห้อง, ผู้เช่า..." />
+    <div class="search-box">
+      <svg class="search-icon" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" />
+      </svg>
+      <input
+        type="text"
+        class="input-search"
+        placeholder="ค้นหาเลขที่สัญญา, โครงการ, เลขห้อง, หรือชื่อผู้เช่า..."
+        [value]="searchTerm"
+        (input)="onSearch($event)"
+      />
+    </div>
+
     <div class="filter-pills">
-      <button class="pill active">สัญญาทั้งหมด (176)</button>
-      <button class="pill">Direct to Owner (112)</button>
-      <button class="pill">Through Agent (64)</button>
+      <button class="pill" [class.active]="selectedPaymentMode === null" (click)="setPaymentModeFilter(null)">
+        สัญญาทั้งหมด ({{ leases.length }})
+      </button>
+      <button class="pill" [class.active]="selectedPaymentMode === 1" (click)="setPaymentModeFilter(1)">
+        จ่ายตรงเจ้าของ ({{ directToOwnerCount }})
+      </button>
+      <button class="pill" [class.active]="selectedPaymentMode === 2" (click)="setPaymentModeFilter(2)">
+        ผ่านนายหน้า ({{ throughAgentCount }})
+      </button>
     </div>
   </div>
 
+  <!-- Leases Table Card -->
   <div class="table-card">
     <table class="data-table">
       <thead>
         <tr>
-          <th>เลขที่สัญญา / ห้อง</th>
+          <th>เลขที่สัญญา / ห้องชุด</th>
           <th>ผู้เช่า (Tenant)</th>
           <th>ระยะเวลาสัญญา</th>
           <th>ค่าเช่ารายเดือน</th>
           <th>วิธีรับเงิน (Mode)</th>
           <th>เงินประกัน</th>
           <th>สถานะสัญญา</th>
-          <th>จัดการ</th>
+          <th style="text-align: right;">การจัดการ</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let l of leases">
           <td>
             <div class="lease-cell">
-              <span class="lease-no">{{ l.leaseNumber }}</span>
-              <span class="unit-code">{{ l.unit }}</span>
+              <span class="lease-no font-bold">{{ l.leaseNumber }}</span>
+              <span class="unit-code">{{ l.projectName }} {{ l.unitNumber }}</span>
             </div>
           </td>
-          <td>{{ l.tenant }}</td>
+          <td>
+            <div class="contact-cell">
+              <span class="font-bold text-dark">{{ l.tenantName }}</span>
+              <span class="sub-text">{{ l.tenantPhone }}</span>
+            </div>
+          </td>
           <td>
             <div class="date-cell">
-              <span>{{ l.startDate }} - {{ l.endDate }}</span>
-              <span class="due-day">ครบกำหนดทุกวันที่ {{ l.dueDay }}</span>
+              <span>{{ l.startDate }} ถึง {{ l.endDate }}</span>
+              <span class="due-day">ครบกำหนดทุกวันที่ {{ l.rentDueDay }}</span>
             </div>
           </td>
-          <td class="font-mono font-bold">฿ {{ l.monthlyRent | number }}</td>
+          <td class="font-mono font-bold text-dark">฿ {{ l.monthlyRent | number:'1.0-0' }}</td>
           <td>
-            <span class="badge" [class.badge-emerald]="l.paymentMode === 'through_agent'" [class.badge-blue]="l.paymentMode === 'direct_to_owner'">
-              {{ l.paymentMode === 'through_agent' ? 'ผ่านนายหน้า' : 'จ่ายตรงเจ้าของ' }}
-            </span>
-          </td>
-          <td class="font-mono">฿ {{ l.deposit | number }}</td>
-          <td>
-            <span class="badge" [class.badge-emerald]="l.status === 'ใช้งานอยู่'" [class.badge-amber]="l.status === 'ใกล้หมดอายุ'">
-              {{ l.status }}
+            <span class="badge" [class.badge-emerald]="l.paymentMode === 2" [class.badge-blue]="l.paymentMode === 1">
+              {{ l.paymentModeText }}
             </span>
           </td>
           <td>
-            <button class="btn btn-secondary btn-xs">ดูสัญญา</button>
+            <div class="deposit-cell">
+              <span class="font-mono font-bold">฿ {{ l.depositAmount | number:'1.0-0' }}</span>
+              <span class="deposit-holder">({{ l.depositHolderText }})</span>
+            </div>
+          </td>
+          <td>
+            <span
+              class="badge"
+              [class.badge-emerald]="l.status === 2"
+              [class.badge-amber]="l.status === 3"
+              [class.badge-gray]="l.status !== 2 && l.status !== 3"
+            >
+              {{ l.statusText }}
+            </span>
+          </td>
+          <td>
+            <div class="action-buttons">
+              <button class="btn btn-secondary btn-xs" (click)="openEditModal(l)" title="แก้ไขสัญญา">
+                แก้ไข
+              </button>
+              <button class="btn btn-danger-subtle btn-xs" (click)="deleteLease(l.id, l.leaseNumber)" title="ลบสัญญา">
+                ลบ
+              </button>
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="leases.length === 0">
+          <td colspan="8" class="empty-state">
+            ไม่พบข้อมูลสัญญาเช่าที่ตรงกับเงื่อนไขการค้นหา
           </td>
         </tr>
       </tbody>
     </table>
+  </div>
+
+  <!-- Create / Edit Modal -->
+  <div class="modal-backdrop" *ngIf="isModalOpen" (click)="closeModal()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">{{ isEditMode ? 'แก้ไขรายละเอียดสัญญาเช่า' : 'ทำสัญญาเช่าใหม่ (New Lease)' }}</h2>
+        <button class="btn-close" (click)="closeModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">เลขที่สัญญา <span class="required">*</span></label>
+            <input
+              type="text"
+              class="form-control"
+              placeholder="เช่น LS-2026-001"
+              [(ngModel)]="currentLease.leaseNumber"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">สถานะสัญญา</label>
+            <select class="form-control" [(ngModel)]="currentLease.status">
+              <option [ngValue]="2">ใช้งานอยู่ (Active)</option>
+              <option [ngValue]="3">ใกล้หมดอายุ (Expiring Soon)</option>
+              <option [ngValue]="1">ฉบับร่าง (Draft)</option>
+              <option [ngValue]="4">สิ้นสุดสัญญา (Ended)</option>
+              <option [ngValue]="5">ยกเลิกก่อนกำหนด (Terminated)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">ห้องชุดที่ทำสัญญา <span class="required">*</span></label>
+            <select class="form-control" [(ngModel)]="currentLease.unitId" (change)="onUnitChanged()">
+              <option value="" disabled>-- เลือกห้องชุด --</option>
+              <option *ngFor="let u of units" [value]="u.id">
+                {{ u.projectName }} {{ u.unitNumber }} ({{ u.statusText }} · ฿{{ u.targetRentPrice | number }})
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">ผู้เช่า (Tenant) <span class="required">*</span></label>
+            <select class="form-control" [(ngModel)]="currentLease.tenantId">
+              <option value="" disabled>-- เลือกผู้เช่า --</option>
+              <option *ngFor="let t of tenants" [value]="t.id">
+                {{ t.fullName }} ({{ t.phone }})
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">วันเริ่มต้นสัญญา <span class="required">*</span></label>
+            <input type="date" class="form-control" [(ngModel)]="currentLease.startDate" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">วันสิ้นสุดสัญญา <span class="required">*</span></label>
+            <input type="date" class="form-control" [(ngModel)]="currentLease.endDate" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">ค่าเช่าต่อเดือน (บาท) <span class="required">*</span></label>
+            <input type="number" class="form-control" [(ngModel)]="currentLease.monthlyRent" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">ครบกำหนดชำระทุกวันที่ (1-31)</label>
+            <input type="number" min="1" max="31" class="form-control" [(ngModel)]="currentLease.rentDueDay" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">วิธีรับชำระค่าเช่า (Payment Mode)</label>
+            <select class="form-control" [(ngModel)]="currentLease.paymentMode">
+              <option [ngValue]="2">ผ่านนายหน้า (Through Agent)</option>
+              <option [ngValue]="1">จ่ายตรงเจ้าของ (Direct to Owner)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">ผู้ถือเงินประกัน (Deposit Holder)</label>
+            <select class="form-control" [(ngModel)]="currentLease.depositHolder">
+              <option [ngValue]="2">นายหน้าถือ (Agency)</option>
+              <option [ngValue]="1">เจ้าของถือ (Owner)</option>
+              <option [ngValue]="3">อื่นๆ (Other)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">ยอดเงินประกัน (บาท)</label>
+            <input type="number" class="form-control" [(ngModel)]="currentLease.depositAmount" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">วันที่ลงนามสัญญา</label>
+            <input type="date" class="form-control" [(ngModel)]="currentLease.signedAt" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">บันทึกเพิ่มเติม / เงื่อนไขพิเศษ</label>
+          <textarea
+            class="form-control"
+            rows="2"
+            placeholder="เช่น สัญญา 1 ปี รวมค่าส่วนกลางแล้ว, โอนส่งเจ้าของทุกวันที่ 10 ฯลฯ"
+            [(ngModel)]="currentLease.note"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeModal()" [disabled]="isSaving">ยกเลิก</button>
+        <button class="btn btn-primary" (click)="saveLease()" [disabled]="isSaving">
+          {{ isSaving ? 'กำลังบันทึก...' : (isEditMode ? 'บันทึกการแก้ไข' : 'สร้างสัญญาเช่า') }}
+        </button>
+      </div>
+    </div>
   </div>
 </div>

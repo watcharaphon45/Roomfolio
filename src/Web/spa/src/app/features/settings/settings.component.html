@@ -6,25 +6,54 @@
     </div>
   </div>
 
+  <div *ngIf="saveMessage" class="alert-banner" [class.alert-error]="isError">
+    <span>{{ saveMessage }}</span>
+  </div>
+
   <div class="settings-grid">
     <div class="settings-card">
       <h2 class="card-title">ข้อมูลองค์กร (Organization Profile)</h2>
+      
       <div class="form-group">
-        <label>ชื่อองค์กร / เอเจนซี่</label>
-        <input type="text" [value]="settings.companyName" class="form-input" />
+        <label>ชื่อองค์กร / เอเจนซี่ *</label>
+        <input type="text" [(ngModel)]="settings.companyName" class="form-input" placeholder="เช่น Prime Living Agency Co., Ltd." />
       </div>
+
       <div class="form-group">
         <label>เลขประจำตัวผู้เสียภาษี (Tax ID)</label>
-        <input type="text" [value]="settings.taxId" class="form-input" />
+        <input type="text" [(ngModel)]="settings.taxId" class="form-input" placeholder="เลข 13 หลัก" />
       </div>
+
+      <div class="input-row">
+        <div class="form-group">
+          <label>เบอร์โทรศัพท์ติดต่อ</label>
+          <input type="text" [(ngModel)]="settings.phone" class="form-input" placeholder="02-xxx-xxxx หรือ 08x-xxx-xxxx" />
+        </div>
+        <div class="form-group">
+          <label>อีเมลติดต่อ</label>
+          <input type="email" [(ngModel)]="settings.email" class="form-input" placeholder="admin@agency.com" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>ที่อยู่สำนักงาน / ที่อยู่ตามภพ.20</label>
+        <input type="text" [(ngModel)]="settings.address" class="form-input" placeholder="ที่อยู่สำหรับออกใบแจ้งหนี้ / ใบเสร็จ" />
+      </div>
+
       <div class="form-group">
         <label>สกุลเงินหลัก & Timezone</label>
         <div class="input-row">
-          <input type="text" [value]="settings.defaultCurrency" disabled class="form-input" />
-          <input type="text" [value]="settings.timezone" disabled class="form-input" />
+          <input type="text" [value]="settings.defaultCurrency" disabled class="form-input disabled-input" />
+          <input type="text" [value]="settings.timezone" disabled class="form-input disabled-input" />
         </div>
       </div>
-      <button class="btn btn-primary btn-sm">บันทึกการเปลี่ยนแปลง</button>
+
+      <div class="card-footer">
+        <button class="btn btn-primary btn-sm" [disabled]="saving" (click)="onSave()">
+          <span *ngIf="saving">กำลังบันทึก...</span>
+          <span *ngIf="!saving">บันทึกการเปลี่ยนแปลง</span>
+        </button>
+      </div>
     </div>
 
     <div class="settings-card">
@@ -34,13 +63,35 @@
           <span class="plan-name">{{ settings.planName }}</span>
           <span class="badge badge-emerald">ใช้งานอยู่</span>
         </div>
-        <div class="plan-price">฿ {{ settings.planPrice }} <span class="period">/ เดือน</span></div>
-        <p class="plan-limit">โควตาห้อง: {{ settings.roomCount }} / {{ settings.roomLimit }} ห้อง ({{ (settings.roomCount / settings.roomLimit) * 100 }}%)</p>
+        <div class="plan-price">฿ {{ settings.planPrice | number:'1.0-0' }} <span class="period">/ เดือน</span></div>
+        <p class="plan-limit">โควตาห้อง: <strong>{{ settings.roomCount }}</strong> / {{ settings.roomLimit }} ห้อง ({{ quotaPercentage }}%)</p>
         <div class="progress-bar">
-          <div class="progress-fill" [style.width.%]="(settings.roomCount / settings.roomLimit) * 100"></div>
+          <div class="progress-fill" [style.width.%]="quotaPercentage"></div>
+        </div>
+        <p class="plan-desc">บันทึกห้องชุดในพอร์ตโฟลิโอปัจจุบัน <strong>{{ settings.roomCount }} ห้อง</strong> จากโควตาสูงสุด <strong>{{ settings.roomLimit }} ห้อง</strong></p>
+      </div>
+      
+      <div class="plan-benefits">
+        <div class="benefit-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <span>ไม่จำกัดจำนวนสัญญาเช่า (Unlimited Leases)</span>
+        </div>
+        <div class="benefit-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <span>ระบบตัดเงินประกัน Move-in / Move-out อัตโนมัติ</span>
+        </div>
+        <div class="benefit-item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <span>ส่งออกรายงาน Owner Statement & Excel รายงวด</span>
         </div>
       </div>
-      <button class="btn btn-secondary btn-sm">อัปเกรดเป็น Business Plan</button>
+
+      <button *ngIf="settings.roomLimit < 500" class="btn btn-secondary btn-sm" (click)="onUpgrade()">
+        อัปเกรดเป็น Business Plan (฿1,490 / 500 ห้อง)
+      </button>
+      <div *ngIf="settings.roomLimit >= 500" class="badge-plan-active">
+        คุณกำลังใช้งานแพ็กเกจระดับสูงเรียบร้อยแล้ว
+      </div>
     </div>
   </div>
 </div>

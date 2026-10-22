@@ -1,75 +1,391 @@
 <div class="page-container" *ngIf="data">
+  <!-- Page Header -->
   <div class="page-header">
     <div>
       <h1 class="page-title">สรุปยอดเงินนำส่งเจ้าของ (Owner Settlements)</h1>
-      <p class="page-subtitle">รวบรวมยอดเงินที่นายหน้ารับแทน หักค่าบริหาร/ค่าใช้จ่ายที่ตกลงไว้ และบันทึกหลักฐานการโอน</p>
+      <p class="page-subtitle">รวบรวมยอดเงินที่นายหน้ารับแทน หักค่าบริหาร/ค่าใช้จ่ายที่ตกลงไว้ และบันทึกหลักฐานการโอน (PostgreSQL Real DB)</p>
     </div>
-    <button class="btn btn-primary">+ สร้างรอบสรุปยอดใหม่ (Generate Settlement)</button>
+    <button class="btn btn-primary" (click)="openGenerateModal()">+ สร้างรอบสรุปยอดใหม่ (Generate Settlement)</button>
   </div>
 
-  <!-- Pipeline stages -->
+  <!-- Interactive Pipeline Stages Bar -->
   <div class="pipeline-bar">
-    <div class="stage-step active">
+    <div
+      class="stage-step"
+      [class.active]="selectedStatusFilter === 1"
+      (click)="filterByStatus(1)"
+      title="คลิกเพื่อกรองสถานะ"
+    >
       <span class="stage-name">1. Draft (แบบร่าง)</span>
       <span class="stage-count">{{ data.draftCount }} ราย</span>
     </div>
+
     <div class="stage-divider">→</div>
-    <div class="stage-step active">
+
+    <div
+      class="stage-step"
+      [class.active]="selectedStatusFilter === 2"
+      (click)="filterByStatus(2)"
+      title="คลิกเพื่อกรองสถานะ"
+    >
       <span class="stage-name">2. Review (ตรวจทาน)</span>
       <span class="stage-count">{{ data.reviewCount }} ราย</span>
     </div>
+
     <div class="stage-divider">→</div>
-    <div class="stage-step active">
+
+    <div
+      class="stage-step"
+      [class.active]="selectedStatusFilter === 3"
+      (click)="filterByStatus(3)"
+      title="คลิกเพื่อกรองสถานะ"
+    >
       <span class="stage-name">3. Approved (อนุมัติโอน)</span>
       <span class="stage-count">{{ data.approvedCount }} ราย</span>
     </div>
+
     <div class="stage-divider">→</div>
-    <div class="stage-step">
+
+    <div
+      class="stage-step"
+      [class.active]="selectedStatusFilter === 4"
+      (click)="filterByStatus(4)"
+      title="คลิกเพื่อกรองสถานะ"
+    >
       <span class="stage-name">4. Paid (โอนแล้วเสร็จ)</span>
       <span class="stage-count">{{ data.paidCount }} ราย</span>
     </div>
+
+    <div class="pipeline-total">
+      <span class="total-label">ยอดสุทธิรวมที่ต้องนำส่ง:</span>
+      <span class="total-value font-mono">฿ {{ data.totalNetPayable | number:'1.0-0' }}</span>
+    </div>
   </div>
 
+  <!-- Search & Filter Bar -->
+  <div class="filter-bar">
+    <div class="search-box">
+      <svg class="search-icon" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clip-rule="evenodd" />
+      </svg>
+      <input
+        type="text"
+        class="input-search"
+        placeholder="ค้นหาชื่อเจ้าของห้อง, เบอร์โทรศัพท์, หรือเลขอ้างอิงการโอนเงิน..."
+        [value]="searchTerm"
+        (input)="onSearch($event)"
+      />
+    </div>
+
+    <div class="filter-badge" *ngIf="selectedStatusFilter">
+      <span>กำลังกรองสถานะ</span>
+      <button class="btn-clear" (click)="filterByStatus(null)">&times; ล้างตัวกรอง</button>
+    </div>
+  </div>
+
+  <!-- Table Card -->
   <div class="table-card">
     <table class="data-table">
       <thead>
         <tr>
-          <th>รอบสรุปยอด / เจ้าของ</th>
+          <th>เจ้าของห้อง (Owner) / รอบสรุปยอด</th>
+          <th>บัญชีธนาคารรับเงิน</th>
           <th>ค่าเช่ารับจริง</th>
           <th>หักค่าใช้จ่าย</th>
           <th>หักค่าบริหาร (Fee)</th>
           <th>ยอดสุทธิที่ต้องโอน</th>
           <th>สถานะรอบ</th>
-          <th>เอกสาร & สลิป</th>
-          <th>การดำเนินการ</th>
+          <th>เลขอ้างอิงการโอน</th>
+          <th style="text-align: right;">การดำเนินการ</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let s of data.settlements">
           <td>
             <div class="cell-main">
-              <span class="title">{{ s.owner }}</span>
-              <span class="sub">รอบ {{ s.period }} · {{ s.unitsCount }} ห้อง</span>
+              <span class="owner-name font-bold">{{ s.ownerName }}</span>
+              <span class="sub-text">รอบ {{ s.period }} · {{ s.unitsCount }} ห้อง</span>
             </div>
           </td>
-          <td class="font-mono">฿ {{ s.gross | number }}</td>
-          <td class="font-mono text-rose">- ฿ {{ s.expense | number }}</td>
-          <td class="font-mono text-amber">- ฿ {{ s.fee | number }}</td>
-          <td class="font-mono font-bold text-emerald">฿ {{ s.net | number }}</td>
           <td>
-            <span class="badge" [ngClass]="s.statusBadge">{{ s.status }}</span>
+            <div class="bank-cell">
+              <span class="bank-name font-bold" *ngIf="s.bankName">{{ s.bankName }}</span>
+              <span class="font-mono sub-text" *ngIf="s.bankAccountNumber">{{ s.bankAccountNumber }}</span>
+              <span class="text-muted" *ngIf="!s.bankName">-</span>
+            </div>
+          </td>
+          <td class="font-mono font-bold text-dark">฿ {{ s.gross | number:'1.0-0' }}</td>
+          <td class="font-mono text-rose">- ฿ {{ s.expense | number:'1.0-0' }}</td>
+          <td class="font-mono text-amber">- ฿ {{ s.fee | number:'1.0-0' }}</td>
+          <td class="font-mono font-bold text-emerald" style="font-size: 0.95rem;">
+            ฿ {{ s.net | number:'1.0-0' }}
           </td>
           <td>
-            <span class="doc-link">📄 Statement PDF</span>
+            <span class="badge" [ngClass]="s.statusBadge">{{ s.statusText }}</span>
+          </td>
+          <td>
+            <span class="font-mono transfer-ref" *ngIf="s.transferReference">
+              {{ s.transferReference }}
+            </span>
+            <span class="text-muted" *ngIf="!s.transferReference">-</span>
           </td>
           <td>
             <div class="action-buttons">
-              <button class="btn btn-secondary btn-xs">เปิดตรวจ</button>
-              <button class="btn btn-primary btn-xs" *ngIf="s.status === 'อนุมัติแล้ว'">บันทึกโอน</button>
+              <button class="btn btn-secondary btn-xs" (click)="openDetailsModal(s)" title="ดูรายละเอียดใบสรุปยอด">
+                รายละเอียด
+              </button>
+
+              <button
+                class="btn btn-secondary btn-xs"
+                *ngIf="s.status === 1"
+                (click)="advanceStatus(s, 2)"
+                title="ส่งตรวจทาน"
+              >
+                ส่งตรวจทาน
+              </button>
+
+              <button
+                class="btn btn-blue btn-xs"
+                *ngIf="s.status === 2"
+                (click)="advanceStatus(s, 3)"
+                title="อนุมัติยอด"
+              >
+                อนุมัติโอน
+              </button>
+
+              <button
+                class="btn btn-primary btn-xs"
+                *ngIf="s.status === 3"
+                (click)="openDisburseModal(s)"
+                title="บันทึกหลักฐานการโอนเงิน"
+              >
+                บันทึกโอน
+              </button>
             </div>
+          </td>
+        </tr>
+        <tr *ngIf="data.settlements.length === 0">
+          <td colspan="9" class="empty-state">
+            ไม่พบข้อมูลรอบสรุปยอดที่ตรงกับเงื่อนไขการค้นหา
           </td>
         </tr>
       </tbody>
     </table>
+  </div>
+
+  <!-- Generate Settlement Modal -->
+  <div class="modal-backdrop" *ngIf="isGenerateModalOpen" (click)="closeGenerateModal()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">สร้างรอบสรุปยอดเงินนำส่งเจ้าของ (New Settlement)</h2>
+        <button class="btn-close" (click)="closeGenerateModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">เจ้าของห้อง (Owner) <span class="required">*</span></label>
+          <select class="form-control" [(ngModel)]="newSettlement.ownerId">
+            <option value="" disabled>-- เลือกเจ้าของห้อง --</option>
+            <option *ngFor="let o of owners" [value]="o.id">
+              {{ o.fullName }} ({{ o.bankName || 'ยังไม่ระบุธนาคาร' }} · {{ o.bankAccountNumber || '-' }})
+            </option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">รอบเริ่มต้นวันที่ <span class="required">*</span></label>
+            <input type="date" class="form-control" [(ngModel)]="newSettlement.periodStart" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">รอบสิ้นสุดวันที่ <span class="required">*</span></label>
+            <input type="date" class="form-control" [(ngModel)]="newSettlement.periodEnd" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">ค่าเช่ารับจริง (Gross Rent) <span class="required">*</span></label>
+            <input
+              type="number"
+              class="form-control font-mono font-bold"
+              placeholder="เช่น 45000"
+              [(ngModel)]="newSettlement.grossRentCollected"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">อัตราค่าบริหาร (%)</label>
+            <input
+              type="number"
+              class="form-control font-mono"
+              placeholder="5"
+              [(ngModel)]="newSettlement.managementFeePercent"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">หักค่าใช้จ่ายซ่อมแซม/ทำความสะอาด (บาท)</label>
+          <input
+            type="number"
+            class="form-control font-mono text-rose"
+            placeholder="0"
+            [(ngModel)]="newSettlement.expensesDeducted"
+          />
+        </div>
+
+        <!-- Live Net Calculation Preview -->
+        <div class="calc-preview-card">
+          <div class="preview-row">
+            <span>ค่าเช่ารับจริง:</span>
+            <span class="font-mono">฿ {{ newSettlement.grossRentCollected | number:'1.2-2' }}</span>
+          </div>
+          <div class="preview-row text-amber">
+            <span>หักค่าบริหารจัดการ ({{ newSettlement.managementFeePercent }}%):</span>
+            <span class="font-mono">- ฿ {{ (newSettlement.grossRentCollected * newSettlement.managementFeePercent / 100) | number:'1.2-2' }}</span>
+          </div>
+          <div class="preview-row text-rose">
+            <span>หักค่าใช้จ่าย:</span>
+            <span class="font-mono">- ฿ {{ newSettlement.expensesDeducted | number:'1.2-2' }}</span>
+          </div>
+          <div class="preview-row preview-total">
+            <span>ยอดสุทธิที่ต้องโอนเจ้าของ (Net Payable):</span>
+            <span class="font-mono font-bold text-emerald" style="font-size: 1.15rem;">
+              ฿ {{ calculatedNet | number:'1.2-2' }}
+            </span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">บันทึกเพิ่มเติม / เงื่อนไข</label>
+          <textarea
+            class="form-control"
+            rows="2"
+            placeholder="เช่น สรุปรอบค่าเช่าประจำเดือน ต.ค., แนบใบเสร็จค่าช่าง ฯลฯ"
+            [(ngModel)]="newSettlement.note"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeGenerateModal()" [disabled]="isSaving">ยกเลิก</button>
+        <button class="btn btn-primary" (click)="submitGenerateSettlement()" [disabled]="isSaving">
+          {{ isSaving ? 'กำลังบันทึก...' : 'สร้างรอบสรุปยอด' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Disburse Payment Modal -->
+  <div class="modal-backdrop" *ngIf="isDisburseModalOpen && targetSettlement" (click)="closeDisburseModal()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">บันทึกการโอนเงินส่งเจ้าของ (Disburse Payment)</h2>
+        <button class="btn-close" (click)="closeDisburseModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="disburse-summary-card">
+          <div class="owner-bank-info">
+            <span class="disburse-owner font-bold">{{ targetSettlement.ownerName }}</span>
+            <span class="disburse-bank" *ngIf="targetSettlement.bankName">
+              {{ targetSettlement.bankName }} · {{ targetSettlement.bankAccountNumber }}
+            </span>
+          </div>
+          <div class="disburse-net">
+            <span class="net-label">ยอดที่ต้องโอนจริง:</span>
+            <span class="net-amount font-mono font-bold text-emerald">
+              ฿ {{ targetSettlement.net | number:'1.2-2' }}
+            </span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">เลขที่อ้างอิงสลิป / รหัสธุรกรรมการโอน <span class="required">*</span></label>
+          <input
+            type="text"
+            class="form-control font-mono font-bold"
+            placeholder="เช่น SCB-20261022-88192"
+            [(ngModel)]="disburseForm.transferReference"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">หมายเหตุการโอน</label>
+          <textarea
+            class="form-control"
+            rows="2"
+            placeholder="เช่น โอนเงินผ่าน Internet Banking บัญชีบริษัทสำเร็จ"
+            [(ngModel)]="disburseForm.note"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeDisburseModal()" [disabled]="isSaving">ยกเลิก</button>
+        <button class="btn btn-primary" (click)="submitDisbursePayment()" [disabled]="isSaving">
+          {{ isSaving ? 'กำลังบันทึก...' : 'ยืนยันการโอนเงินส่งเจ้าของ' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- View Statement Details Modal -->
+  <div class="modal-backdrop" *ngIf="isDetailsModalOpen && viewingSettlement" (click)="closeDetailsModal()">
+    <div class="modal-dialog modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">ใบสรุปยอดนำส่งเจ้าของ (Owner Statement)</h2>
+        <button class="btn-close" (click)="closeDetailsModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="statement-header-card">
+          <div>
+            <h3 class="statement-owner font-bold">{{ viewingSettlement.ownerName }}</h3>
+            <p class="statement-period">รอบประจำวันที่: {{ viewingSettlement.period }}</p>
+          </div>
+          <div class="statement-badge-wrap">
+            <span class="badge" [ngClass]="viewingSettlement.statusBadge">{{ viewingSettlement.statusText }}</span>
+            <span class="statement-ref font-mono" *ngIf="viewingSettlement.transferReference">Ref: {{ viewingSettlement.transferReference }}</span>
+          </div>
+        </div>
+
+        <h4 class="section-title">รายการรายละเอียด (Statement Line Items)</h4>
+        <table class="statement-table">
+          <thead>
+            <tr>
+              <th>ประเภท</th>
+              <th>คำอธิบาย</th>
+              <th style="text-align: right;">จำนวนเงิน</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let l of viewingSettlement.lines">
+              <td>
+                <span class="line-badge">{{ l.lineTypeText }}</span>
+              </td>
+              <td>{{ l.description }}</td>
+              <td class="font-mono font-bold" [class.text-rose]="l.amount < 0" [class.text-emerald]="l.amount > 0" style="text-align: right;">
+                {{ l.amount > 0 ? '+' : '' }} ฿ {{ l.amount | number:'1.2-2' }}
+              </td>
+            </tr>
+            <tr class="total-row">
+              <td colspan="2" class="font-bold">ยอดสุทธิที่นำส่งเจ้าของ (Net Payable)</td>
+              <td class="font-mono font-bold text-emerald" style="text-align: right; font-size: 1.1rem;">
+                ฿ {{ viewingSettlement.net | number:'1.2-2' }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="note-box" *ngIf="viewingSettlement.note">
+          <strong>หมายเหตุ:</strong> {{ viewingSettlement.note }}
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeDetailsModal()">ปิด</button>
+      </div>
+    </div>
   </div>
 </div>
